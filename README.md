@@ -18,14 +18,14 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 - Archiv, Personenverwaltung, Datensicherung (Backup speichern/laden)
 
 ## Veröffentlichen über GitHub Pages
-1. Auf github.com ein neues Repository anlegen (z.B. `besprechungsprotokoll`).
+1. Repository: https://github.com/StD-25/Besprechungs-App
 2. Den Inhalt dieses Ordners hochladen bzw. pushen:
    ```
-   git remote add origin https://github.com/<BENUTZER>/besprechungsprotokoll.git
+   git remote add origin https://github.com/StD-25/Besprechungs-App.git
    git push -u origin main
    ```
 3. Im Repository: **Settings → Pages → Source: „Deploy from a branch“, Branch `main`, Ordner `/ (root)`** → Speichern.
-4. Nach ca. 1 Minute ist die App erreichbar unter `https://<BENUTZER>.github.io/besprechungsprotokoll/`.
+4. Nach ca. 1 Minute ist die App erreichbar unter https://std-25.github.io/Besprechungs-App/.
 
 ## Auf dem Android-Handy als Icon installieren
 1. Die Adresse in **Chrome** öffnen.
