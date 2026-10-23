@@ -1,0 +1,105 @@
+import * as model from '../model.js';
+import { app, esc, setHeader, setActiveTab, toast, confirmDialog, actionDialog, objectURL } from '../core/ui.js';
+import { formatDateTime } from '../core/filename.js';
+import { download, shareFile } from '../core/share.js';
+import { reportPdf, reportImagesZip } from '../export.js';
+
+async function pointCard(p) {
+  const photos = await model.getPhotos(p.id);
+  return `
+    <div class="card clickable point ${p.done ? 'done' : ''}" data-point="${p.id}">
+      ${photos.length ? `<div class="thumbs">${photos.slice(0, 2).map((ph) => `<img class="thumb" src="${objectURL(ph.thumb)}" alt="">`).join('')}</div>` : ''}
+      <div class="body">
+        <div><span class="badge">#${p.no}</span> <span class="badge">${esc(p.area || '–')}</span>
+          ${p.isTodo ? `<span class="badge ${p.done ? 'done' : 'open'}">${p.done ? 'erledigt' : 'offen'}</span>` : ''}</div>
+        <div class="remark">${esc(p.remark || '')}</div>
+        <div class="meta">${formatDateTime(p.createdAt)}${p.assignee ? ` · Zuständig: <b>${esc(p.assignee)}</b>` : ''}${photos.length > 2 ? ` · ${photos.length} Fotos` : ''}</div>
+      </div>
+    </div>`;
+}
+
+export async function render({ id }) {
+  const report = await model.getReport(id);
+  if (!report) { location.hash = '#/'; return; }
+  const archived = report.status === 'archived';
+  const title = model.reportTitle(report);
+  setHeader(title, archived ? '#/archive' : '#/');
+  setActiveTab(archived ? 'archive' : 'home');
+
+  const points = await model.getPoints(id); // neueste oben
+  const openCount = points.filter((p) => p.isTodo && !p.done).length;
+
+  app().innerHTML = `
+    <div class="card">
+      <div class="meta">${formatDateTime(report.createdAt)}${archived ? ' · <span class="badge">archiviert</span>' : ''}</div>
+      <label for="participants">Teilnehmer</label>
+      <input type="text" id="participants" value="${esc(report.participants)}" placeholder="Namen, durch Komma getrennt" ${archived ? 'disabled' : ''}>
+    </div>
+    ${archived ? '' : '<a class="btn block" href="#/report/' + id + '/point/new">＋ Neue Auffälligkeit</a>'}
+    <h2>Auffälligkeiten (${points.length}${openCount ? `, ${openCount} offen` : ''})</h2>
+    <div id="points">${points.length ? (await Promise.all(points.map(pointCard))).join('') : '<p class="empty">Noch keine Punkte erfasst.</p>'}</div>
+    <h2>Bericht</h2>
+    <div class="btn-row">
+      <button class="btn" id="finish">${archived ? 'PDF erstellen' : 'Bericht abschließen / PDF'}</button>
+    </div>
+    <div class="btn-row">
+      ${archived
+        ? '<button class="btn secondary" id="reactivate">Wieder öffnen</button>'
+        : '<button class="btn secondary" id="archive">Ins Archiv</button>'}
+      <button class="btn danger" id="delete">Bericht löschen</button>
+    </div>`;
+
+  const part = document.getElementById('participants');
+  part.onchange = async () => {
+    report.participants = part.value.trim();
+    await model.saveReport(report);
+    await model.addPersons(model.splitNames(report.participants));
+    toast('Teilnehmer gespeichert');
+  };
+
+  app().querySelectorAll('[data-point]').forEach((el) => {
+    el.onclick = () => { location.hash = `#/report/${id}/point/${el.dataset.point}`; };
+  });
+
+  document.getElementById('finish').onclick = async () => {
+    toast('PDF wird erstellt …', 1500);
+    report.finishedAt = Date.now();
+    await model.saveReport(report);
+    const pdf = await reportPdf(report);
+    const zip = await reportImagesZip(report);
+    const kb = Math.round(pdf.blob.size / 1024);
+    await actionDialog(`${pdf.filename} (${kb} KB) wurde erstellt.`, [
+      { label: '✉ Per E-Mail senden', run: () => shareFile(pdf.blob, pdf.filename, { title: `${pdf.title} ${formatDateTime(report.createdAt)}`, text: `Anbei das Protokoll "${pdf.title}" vom ${formatDateTime(report.createdAt)}.` }) },
+      { label: '⤓ PDF speichern', cls: 'secondary', close: false, run: () => download(pdf.blob, pdf.filename) },
+      ...(zip ? [{ label: `⤓ Bilder speichern (${zip.count}, ZIP)`, cls: 'secondary', close: false, run: () => download(zip.blob, zip.filename) }] : []),
+      { label: 'Schließen', cls: 'danger-outline' },
+    ]);
+  };
+
+  document.getElementById('delete').onclick = async () => {
+    if (await confirmDialog(`Bericht "${title}" mit allen Punkten und Fotos endgültig löschen?`, { ok: 'Löschen', danger: true })) {
+      await model.deleteReport(id);
+      toast('Bericht gelöscht');
+      location.hash = archived ? '#/archive' : '#/';
+    }
+  };
+
+  const archiveBtn = document.getElementById('archive');
+  if (archiveBtn) archiveBtn.onclick = async () => {
+    if (openCount && !(await confirmDialog(`Es sind noch ${openCount} Aufgaben offen. Trotzdem archivieren?`, { ok: 'Archivieren' }))) return;
+    report.status = 'archived';
+    report.archivedAt = Date.now();
+    await model.saveReport(report);
+    toast('Bericht archiviert');
+    location.hash = '#/archive';
+  };
+
+  const reactivate = document.getElementById('reactivate');
+  if (reactivate) reactivate.onclick = async () => {
+    report.status = 'open';
+    report.archivedAt = null;
+    await model.saveReport(report);
+    toast('Bericht wieder geöffnet');
+    render({ id });
+  };
+}

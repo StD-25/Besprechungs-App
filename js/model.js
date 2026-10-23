@@ -1,0 +1,121 @@
+// Fachlogik: Berichte, Punkte (Auffälligkeiten/Aufgaben), Fotos, Personen.
+import * as db from './core/db.js';
+import { REASONS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
+import { resizeImage } from './core/image.js';
+
+export const reasonOf = (report) => REASONS.find((r) => r.id === report.reason) || REASONS[0];
+
+export function reportTitle(report) {
+  const reason = reasonOf(report);
+  return reason.id === 'sonstige' ? report.customName || 'Sonstige' : reason.label;
+}
+
+export const reportFileBase = (report) => reasonOf(report).file || reportTitle(report);
+
+export const newestFirst = (a, b) => b.createdAt - a.createdAt;
+
+// ---- Berichte ----
+export async function createReport({ reason, customName, participants }) {
+  const report = {
+    id: db.uid(),
+    reason,
+    customName: customName || '',
+    participants: participants || '',
+    createdAt: Date.now(),
+    status: 'open', // open | archived
+    finishedAt: null,
+    archivedAt: null,
+  };
+  await db.put('reports', report);
+  await addPersons(splitNames(participants));
+  return report;
+}
+
+export const getReport = (id) => db.get('reports', id);
+export const saveReport = (r) => db.put('reports', r);
+
+export async function listReports(status) {
+  const all = await db.getAll('reports');
+  return all.filter((r) => r.status === status).sort(newestFirst);
+}
+
+export async function deleteReport(id) {
+  for (const p of await db.getBy('points', 'reportId', id)) await deletePoint(p.id);
+  await db.del('reports', id);
+}
+
+// ---- Punkte ----
+export async function getPoints(reportId) {
+  return (await db.getBy('points', 'reportId', reportId)).sort(newestFirst);
+}
+
+export const getPoint = (id) => db.get('points', id);
+
+export async function savePoint(point, { newFiles = [], removedPhotoIds = [] } = {}) {
+  if (!point.id) {
+    const existing = await db.getBy('points', 'reportId', point.reportId);
+    point.id = db.uid();
+    point.no = existing.reduce((m, p) => Math.max(m, p.no || 0), 0) + 1;
+    point.createdAt = Date.now();
+    point.done = false;
+    point.doneAt = null;
+  }
+  for (const pid of removedPhotoIds) await db.del('photos', pid);
+  for (const file of newFiles) {
+    const full = await resizeImage(file, PHOTO_FULL);
+    const thumb = await resizeImage(file, PHOTO_THUMB);
+    await db.put('photos', {
+      id: db.uid(),
+      pointId: point.id,
+      reportId: point.reportId,
+      createdAt: Date.now(),
+      full: full.blob,
+      thumb: thumb.blob,
+      thumbW: thumb.width,
+      thumbH: thumb.height,
+    });
+  }
+  await db.put('points', point);
+  if (point.assignee) await addPersons([point.assignee]);
+  return point;
+}
+
+export async function setDone(point, done) {
+  point.done = done;
+  point.doneAt = done ? Date.now() : null;
+  return db.put('points', point);
+}
+
+export async function deletePoint(id) {
+  for (const ph of await db.getBy('photos', 'pointId', id)) await db.del('photos', ph.id);
+  await db.del('points', id);
+}
+
+export async function getPhotos(pointId) {
+  return (await db.getBy('photos', 'pointId', pointId)).sort((a, b) => a.createdAt - b.createdAt);
+}
+
+// ---- Aufgaben ----
+export async function listTodos() {
+  const [points, reports] = await Promise.all([db.getAll('points'), db.getAll('reports')]);
+  const byId = Object.fromEntries(reports.map((r) => [r.id, r]));
+  return points
+    .filter((p) => p.isTodo && byId[p.reportId])
+    .map((p) => ({ ...p, report: byId[p.reportId] }))
+    .sort(newestFirst);
+}
+
+// ---- Personen ----
+export function splitNames(text) {
+  return String(text || '').split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+export async function addPersons(names) {
+  for (const name of names) if (name) await db.put('persons', { name });
+}
+
+export async function listPersons() {
+  return (await db.getAll('persons')).map((p) => p.name).sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+export const deletePerson = (name) => db.del('persons', name);
