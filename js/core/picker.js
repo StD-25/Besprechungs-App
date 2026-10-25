@@ -1,42 +1,79 @@
-// Auswahlfenster mit Mehrfachauswahl im Stil des Android-Systemfensters.
+// Auswahlfenster im Stil des Android-Systemfensters (dunkel, Zeilen mit Kreis rechts).
 import { esc } from './ui.js';
 
 const sortDe = (list) => [...new Set(list.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+const ROW_HEIGHT = 52;
+
+const rowHtml = (name, on) => `
+  <button type="button" class="picker-row ${on ? 'on' : ''}" data-name="${esc(name)}" aria-pressed="${on}">
+    <span>${esc(name)}</span><span class="picker-mark" aria-hidden="true"></span>
+  </button>`;
+
+// Gemeinsames Grundgerüst: Overlay, Fenster, Liste, Schaltflächen unten
+function openSheet({ top = '', actions, rows }) {
+  const ov = document.createElement('div');
+  ov.className = 'picker-overlay';
+  ov.innerHTML = `
+    <div class="picker-sheet" role="dialog" aria-modal="true">
+      ${top}
+      <div class="picker-list" style="max-height:min(${ROW_HEIGHT * rows}px, 75vh)"></div>
+      <div class="picker-actions">
+        ${actions.map((a) => `<button type="button" class="picker-btn" data-act="${a}">${a === 'ok' ? 'OK' : 'Abbrechen'}</button>`).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.body.style.overflow = 'hidden';
+  const close = () => {
+    ov.remove();
+    document.body.style.overflow = '';
+  };
+  return { ov, list: ov.querySelector('.picker-list'), close };
+}
 
 /**
- * Zeigt ein dunkles Auswahlfenster. Löst mit der neuen Auswahl auf (OK)
- * oder mit null (Abbrechen / neben das Fenster getippt).
+ * Einfachauswahl: Antippen wählt und schließt sofort.
+ * Löst mit dem gewählten Eintrag auf oder mit null (Abbrechen / daneben getippt).
+ */
+export function pickOne({ options = [], selected = '', rows = 9 } = {}) {
+  return new Promise((resolve) => {
+    const { ov, list, close } = openSheet({ actions: ['cancel'], rows });
+    list.innerHTML = options.map((o) => rowHtml(o, o === selected)).join('');
+    list.querySelector('.picker-row.on')?.scrollIntoView({ block: 'center' });
+
+    const finish = (result) => { close(); resolve(result); };
+    list.addEventListener('click', (e) => {
+      const row = e.target.closest('.picker-row');
+      if (row) finish(row.dataset.name);
+    });
+    ov.querySelector('[data-act="cancel"]').onclick = () => finish(null);
+    ov.addEventListener('click', (e) => { if (e.target === ov) finish(null); });
+  });
+}
+
+/**
+ * Mehrfachauswahl: Antippen kreuzt an/ab, Übernahme mit OK.
+ * Löst mit der neuen Auswahl auf (OK) oder mit null (Abbrechen / daneben getippt).
  * allowAdd: Zeile „＋ Neue …“ zum Ergänzen eines Eintrags.
  */
-export function pickMany({ options = [], selected = [], allowAdd = true, addLabel = 'Neue Person', addPlaceholder = 'Name' } = {}) {
+export function pickMany({ options = [], selected = [], allowAdd = true, addLabel = 'Neue Person', addPlaceholder = 'Name', rows = 5.5 } = {}) {
   return new Promise((resolve) => {
     let all = sortDe([...options, ...selected]);
     const chosen = new Set(selected);
 
-    const ov = document.createElement('div');
-    ov.className = 'picker-overlay';
-    ov.innerHTML = `
-      <div class="picker-sheet" role="dialog" aria-modal="true">
-        ${allowAdd ? `
-          <button type="button" class="picker-add">＋ ${esc(addLabel)}…</button>
-          <div class="picker-add-form" hidden>
-            <input type="text" placeholder="${esc(addPlaceholder)}" autocomplete="off">
-            <button type="button" class="picker-btn">Hinzufügen</button>
-          </div>` : ''}
-        <div class="picker-list"></div>
-        <div class="picker-actions">
-          <button type="button" class="picker-btn" data-act="cancel">Abbrechen</button>
-          <button type="button" class="picker-btn" data-act="ok">OK</button>
-        </div>
-      </div>`;
-    const list = ov.querySelector('.picker-list');
+    const { ov, list, close } = openSheet({
+      rows,
+      actions: ['cancel', 'ok'],
+      top: allowAdd ? `
+        <button type="button" class="picker-add">＋ ${esc(addLabel)}…</button>
+        <div class="picker-add-form" hidden>
+          <input type="text" placeholder="${esc(addPlaceholder)}" autocomplete="off">
+          <button type="button" class="picker-btn">Hinzufügen</button>
+        </div>` : '',
+    });
 
     function renderList() {
       list.innerHTML = all.length
-        ? all.map((name) => `
-          <button type="button" class="picker-row ${chosen.has(name) ? 'on' : ''}" data-name="${esc(name)}" aria-pressed="${chosen.has(name)}">
-            <span>${esc(name)}</span><span class="picker-mark" aria-hidden="true"></span>
-          </button>`).join('')
+        ? all.map((name) => rowHtml(name, chosen.has(name))).join('')
         : '<p class="picker-empty">Noch keine Einträge – oben hinzufügen.</p>';
     }
     renderList();
@@ -71,17 +108,10 @@ export function pickMany({ options = [], selected = [], allowAdd = true, addLabe
       input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
     }
 
-    const finish = (result) => {
-      ov.remove();
-      document.body.style.overflow = '';
-      resolve(result);
-    };
+    const finish = (result) => { close(); resolve(result); };
     ov.querySelector('[data-act="cancel"]').onclick = () => finish(null);
     // Auswahl in der Reihenfolge der Liste zurückgeben
     ov.querySelector('[data-act="ok"]').onclick = () => finish(all.filter((n) => chosen.has(n)));
     ov.addEventListener('click', (e) => { if (e.target === ov) finish(null); });
-
-    document.body.appendChild(ov);
-    document.body.style.overflow = 'hidden';
   });
 }

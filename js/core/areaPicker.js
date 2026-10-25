@@ -1,51 +1,41 @@
-// Bereichsauswahl: eine aufklappbare Liste + „Sonstiges“ mit freiem Text.
+// Bereichsauswahl: Feld öffnet das dunkle Auswahlfenster, „Sonstiges“ mit freiem Text.
 import { AREA_OTHER } from '../config.js';
 import { esc } from './ui.js';
-
-let counter = 0;
+import { pickOne } from './picker.js';
 
 export function areaPicker(container, { value = '', areas = [] } = {}) {
-  const name = `area${++counter}`;
   const isOther = !!value && !areas.includes(value);
-  const choice = isOther ? AREA_OTHER : value;
-  container.innerHTML = `
-    <div class="selected-area" ${value ? '' : 'hidden'}>${esc(value)}</div>
-    <details class="area-group">
-      <summary>Bereich auswählen</summary>
-      <div class="radio-group">
-        ${[...areas, AREA_OTHER].map((a) => `<label class="choice"><input type="radio" name="${name}" value="${esc(a)}" ${a === choice ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
-      </div>
-    </details>
-    <input type="text" class="area-other" value="${isOther ? esc(value) : ''}" placeholder="Bereich eingeben" ${isOther ? '' : 'hidden'}>`;
+  let choice = isOther ? AREA_OTHER : value;
 
-  const chip = container.querySelector('.selected-area');
-  const details = container.querySelector('details');
+  container.innerHTML = `
+    <button type="button" class="picker-field area-field"></button>
+    <input type="text" class="area-other" value="${isOther ? esc(value) : ''}" placeholder="Bereich eingeben" ${isOther ? '' : 'hidden'}>`;
+  const field = container.querySelector('.area-field');
   const other = container.querySelector('.area-other');
 
-  // Auswahl → Liste schließt sich, gewählter Bereich wird angezeigt
-  container.querySelectorAll(`input[name="${name}"]`).forEach((r) => {
-    r.onchange = () => {
-      details.open = false;
-      chip.textContent = r.value;
-      chip.hidden = false;
-      other.hidden = r.value !== AREA_OTHER;
-      if (!other.hidden) other.focus();
-    };
-  });
+  function render() {
+    field.innerHTML = choice ? `<span>${esc(choice)}</span>` : '<span class="placeholder">Bereich auswählen</span>';
+    other.hidden = choice !== AREA_OTHER;
+  }
+  render();
 
-  const selected = () => container.querySelector(`input[name="${name}"]:checked`)?.value || '';
+  field.onclick = async () => {
+    const picked = await pickOne({ options: [...areas, AREA_OTHER], selected: choice, rows: 9 });
+    if (picked === null) return;
+    choice = picked;
+    render();
+    if (choice === AREA_OTHER) other.focus();
+  };
 
   return {
-    getValue: () => (selected() === AREA_OTHER ? other.value.trim() : selected()),
+    getValue: () => (choice === AREA_OTHER ? other.value.trim() : choice),
     // „Sonstiges“ gewählt, aber kein Text eingetragen
-    isOtherEmpty: () => selected() === AREA_OTHER && !other.value.trim(),
+    isOtherEmpty: () => choice === AREA_OTHER && !other.value.trim(),
     focusOther: () => other.focus(),
     reset() {
-      container.querySelectorAll(`input[name="${name}"]`).forEach((r) => { r.checked = false; });
-      chip.hidden = true;
+      choice = '';
       other.value = '';
-      other.hidden = true;
-      details.open = false;
+      render();
     },
   };
 }

@@ -44,11 +44,14 @@ export async function render() {
   app().innerHTML = `
     <h2>Mein Name</h2>
     <div class="card">
-      <p class="meta">Wird bei Kurznachrichten automatisch eingetragen.</p>
-      <form id="myNameForm" style="display:flex;gap:8px">
-        <input type="text" id="myName" value="${esc(myName)}" placeholder="Vor- und Nachname">
-        <button class="btn" type="submit">Speichern</button>
-      </form>
+      <details id="nameDetails">
+        <summary class="settings-summary">${myName ? `Mein Name: ${esc(myName)}` : 'Mein Name eintragen'}</summary>
+        <p class="meta">Wird bei Kurznachrichten automatisch eingetragen.</p>
+        <form id="myNameForm" style="display:flex;gap:8px">
+          <input type="text" id="myName" value="${esc(myName)}" placeholder="Vor- und Nachname">
+          <button class="btn" type="submit">Speichern</button>
+        </form>
+      </details>
     </div>
     <h2>Gründe der Besprechung</h2>
     <div class="card">
