@@ -4,9 +4,11 @@ import * as model from '../js/model.js';
 import { toast, objectURL, releaseObjectURLs } from '../js/core/ui.js';
 import { formatDateTime } from '../js/core/filename.js';
 import { singlePerson } from '../js/core/personPicker.js';
+import { areaPicker } from '../js/core/areaPicker.js';
 
 const $ = (id) => document.getElementById(id);
 let assignee;
+const area = areaPicker($('areaPicker'));
 let files = [];
 
 async function fill() {
@@ -36,6 +38,7 @@ for (const id of ['camera', 'gallery']) {
 function reset() {
   $('text').value = '';
   $('dueDate').value = '';
+  area.reset();
   assignee.reset();
   files = [];
   renderPhotos();
@@ -55,6 +58,11 @@ $('quickForm').onsubmit = async (e) => {
     $('text').focus();
     return;
   }
+  if (area.isOtherEmpty()) {
+    toast('Bitte den Bereich eingeben.');
+    area.focusOther();
+    return;
+  }
   const author = $('author').value.trim();
   $('save').disabled = true;
   $('save').textContent = 'Speichert …';
@@ -62,6 +70,7 @@ $('quickForm').onsubmit = async (e) => {
     await model.addQuickMessage({
       author,
       text,
+      area: area.getValue(),
       assignee: assignee.getValue(),
       dueDate: $('dueDate').value,
       files,

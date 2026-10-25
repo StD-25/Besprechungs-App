@@ -22,7 +22,8 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 
 ## Kurznachricht (zweites Icon mit „K“)
 Kleines Fenster zum schnellen Erfassen: Datum/Uhrzeit automatisch, Name (aus „Mein Name“),
-Offener Punkt/Beschreibung (Pflicht), Zuständigkeit, Erledigen bis (optional), Fotos (optional).
+Bereich (optional), Offener Punkt/Beschreibung (Pflicht), Zuständigkeit, Erledigen bis (optional),
+Fotos (optional).
 Jede Kurznachricht wird automatisch als offene Aufgabe in den Bericht
 „Kurznachricht TT.MM.JJJJ“ des jeweiligen Tages übernommen.
 

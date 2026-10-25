@@ -335,9 +335,39 @@ body.quick .quick-body label { margin-top: 10px; }
 body.quick .stamp { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
 body.quick .footer-link { display: block; text-align: center; margin-top: 14px; color: var(--blue-600); }
 
-/* Personenauswahl (Teilnehmer) */
-.person-chips { margin-bottom: 8px; }
-.person-chips input[type="checkbox"] { accent-color: var(--blue-800); }
-.add-person { display: flex; gap: 8px; }
-.add-person .btn { flex: 0 0 auto; }
-#areaOther { margin-top: 8px; }
+/* Teilnehmer: Textfeld + Auswahlliste */
+.ms-row { display: flex; gap: 0; }
+.ms-row .ms-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.ms-toggle {
+  flex: 0 0 52px;
+  border: 1px solid var(--blue-200);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  background: var(--blue-100);
+  color: var(--blue-800);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.ms-toggle.open { background: var(--blue-600); color: var(--white); }
+.ms-panel {
+  margin-top: 6px;
+  padding: 6px 12px 12px;
+  border: 1px solid var(--blue-200);
+  border-radius: 8px;
+  background: var(--white);
+  box-shadow: var(--shadow);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.ms-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 0;
+  font-weight: 500;
+  border-bottom: 1px solid var(--blue-100);
+}
+.ms-item input { width: 22px; height: 22px; accent-color: var(--blue-600); }
+.ms-done { margin-top: 10px; }
+.area-other { margin-top: 8px; }

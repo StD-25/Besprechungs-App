@@ -107,7 +107,7 @@ export async function getPhotos(pointId) {
 export const isOverdue = (p) => !!(p.isTodo && !p.done && p.dueDate && p.dueDate < todayISO());
 
 // ---- Kurznachricht: ein Bericht pro Tag, jede Nachricht eine offene Aufgabe ----
-export async function addQuickMessage({ author, text, assignee, dueDate, files = [] }) {
+export async function addQuickMessage({ author, text, area = '', assignee, dueDate, files = [] }) {
   const today = formatDate(Date.now());
   let report = (await listReports('open'))
     .find((r) => r.reason === 'kurznachricht' && formatDate(r.createdAt) === today);
@@ -120,7 +120,7 @@ export async function addQuickMessage({ author, text, assignee, dueDate, files =
   if (author) await addPersons([author]);
   const point = {
     reportId: report.id,
-    area: '',
+    area,
     remark: text,
     assignee,
     dueDate: dueDate || '',

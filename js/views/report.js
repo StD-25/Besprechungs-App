@@ -81,6 +81,7 @@ export async function render({ id }) {
       ...(zip ? [{ label: `⤓ Bilder speichern (${zip.count}, ZIP)`, cls: 'secondary', close: false, run: () => download(zip.blob, zip.filename) }] : []),
       { label: 'Schließen', cls: 'danger-outline' },
     ]);
+    location.hash = '#/';
   };
 
   document.getElementById('delete').onclick = async () => {

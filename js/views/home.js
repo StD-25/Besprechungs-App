@@ -35,11 +35,10 @@ export async function render() {
     <div class="card">
       <h2 style="margin-top:0">Neuer Bericht</h2>
       <form id="newReport">
-        <label>Grund der Besprechung</label>
-        <div class="radio-group">
-          ${REASONS.filter((r) => !r.hidden).map((r, i) => `
-            <label class="choice"><input type="radio" name="reason" value="${r.id}" ${i === 0 ? 'checked' : ''}> ${esc(r.label)}</label>`).join('')}
-        </div>
+        <label for="reason">Grund der Besprechung</label>
+        <select id="reason">
+          ${REASONS.filter((r) => !r.hidden).map((r) => `<option value="${r.id}">${esc(r.label)}</option>`).join('')}
+        </select>
         <div id="customWrap" hidden>
           <label for="customName">Name der Besprechung</label>
           <input type="text" id="customName" placeholder="z.B. Abteilungsrunde">
@@ -57,12 +56,13 @@ export async function render() {
 
   const form = document.getElementById('newReport');
   const customWrap = document.getElementById('customWrap');
-  form.addEventListener('change', () => {
-    customWrap.hidden = form.reason.value !== 'sonstige';
-  });
+  const reasonSelect = document.getElementById('reason');
+  reasonSelect.onchange = () => {
+    customWrap.hidden = reasonSelect.value !== 'sonstige';
+  };
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const reason = form.reason.value;
+    const reason = reasonSelect.value;
     const customName = document.getElementById('customName').value.trim();
     if (reason === 'sonstige' && !customName) {
       toast('Bitte einen Namen für die Besprechung eintragen.');

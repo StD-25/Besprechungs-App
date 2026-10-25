@@ -1,8 +1,8 @@
 import * as model from '../model.js';
-import { AREAS, AREA_OTHER } from '../config.js';
 import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL } from '../core/ui.js';
 import { formatDateTime } from '../core/filename.js';
 import { singlePerson } from '../core/personPicker.js';
+import { areaPicker } from '../core/areaPicker.js';
 
 export async function render({ id, pid }) {
   const report = await model.getReport(id);
@@ -21,22 +21,13 @@ export async function render({ id, pid }) {
   const removedPhotoIds = [];
   const newFiles = [];
   const persons = [...(await model.listPersons()), ...model.splitNames(report.participants)];
-  const isOther = !!point.area && !AREAS.includes(point.area);
-  const areaChoice = isOther ? AREA_OTHER : point.area;
 
   app().innerHTML = `
     <form id="pointForm">
       <div class="meta">${esc(model.reportTitle(report))} · ${formatDateTime(point.createdAt || Date.now())}</div>
 
       <label>Bereich${report.reason === 'kurznachricht' ? ' (optional)' : ''}</label>
-      <div id="areaChip" class="selected-area" ${point.area ? '' : 'hidden'}>${esc(point.area)}</div>
-      <details class="area-group">
-        <summary>Bereich auswählen</summary>
-        <div class="radio-group">
-          ${[...AREAS, AREA_OTHER].map((a) => `<label class="choice"><input type="radio" name="area" value="${esc(a)}" ${a === areaChoice ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
-        </div>
-      </details>
-      <input type="text" id="areaOther" value="${isOther ? esc(point.area) : ''}" placeholder="Bereich eingeben" ${isOther ? '' : 'hidden'}>
+      <div id="areaPicker"></div>
 
       <label for="remark">Offener Punkt/Beschreibung</label>
       <textarea id="remark" placeholder="Was ist offen bzw. aufgefallen?">${esc(point.remark)}</textarea>
@@ -70,18 +61,7 @@ export async function render({ id, pid }) {
 
   const form = document.getElementById('pointForm');
 
-  // Bereich wählen → Gruppe schließt sich, Auswahl wird angezeigt
-  const chip = document.getElementById('areaChip');
-  const areaOther = document.getElementById('areaOther');
-  form.querySelectorAll('input[name="area"]').forEach((r) => {
-    r.onchange = () => {
-      form.querySelectorAll('details.area-group').forEach((d) => { d.open = false; });
-      chip.textContent = r.value;
-      chip.hidden = false;
-      areaOther.hidden = r.value !== AREA_OTHER;
-      if (!areaOther.hidden) areaOther.focus();
-    };
-  });
+  const area = areaPicker(document.getElementById('areaPicker'), { value: point.area });
   const assignee = singlePerson(document.getElementById('assigneePicker'), { value: point.assignee, persons, id: 'assignee' });
 
   const photosEl = document.getElementById('photos');
@@ -115,16 +95,15 @@ export async function render({ id, pid }) {
 
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const choice = form.querySelector('input[name="area"]:checked')?.value || '';
-    const area = choice === AREA_OTHER ? areaOther.value.trim() : choice;
-    if (choice === AREA_OTHER && !area) { toast('Bitte den Bereich eingeben.'); areaOther.focus(); return; }
+    if (area.isOtherEmpty()) { toast('Bitte den Bereich eingeben.'); area.focusOther(); return; }
+    const areaValue = area.getValue();
     const remark = document.getElementById('remark').value.trim();
-    if (!area && report.reason !== 'kurznachricht') { toast('Bitte einen Bereich auswählen.'); return; }
+    if (!areaValue && report.reason !== 'kurznachricht') { toast('Bitte einen Bereich auswählen.'); return; }
     if (!remark && !newFiles.length && !existingPhotos.length) { toast('Bitte einen offenen Punkt/eine Beschreibung oder ein Foto erfassen.'); return; }
     const saveBtn = document.getElementById('save');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Speichert …';
-    point.area = area;
+    point.area = areaValue;
     point.remark = remark;
     point.assignee = assignee.getValue();
     point.dueDate = document.getElementById('dueDate').value;

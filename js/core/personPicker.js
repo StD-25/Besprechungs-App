@@ -28,50 +28,62 @@ export function singlePerson(container, { value = '', persons = [], id = 'person
   };
 }
 
-// Mehrfachauswahl: Personen als Chips zum Antippen + neuen Namen hinzufügen
+// Mehrfachauswahl: Textfeld zum Eintippen + ▾ öffnet Liste zum Anhaken mehrerer Personen
 export function multiPerson(container, { value = '', persons = [], disabled = false, onChange } = {}) {
-  const selected = new Set(String(value).split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean));
-  let all = uniqueSorted([...persons, ...selected]);
+  const split = (text) => String(text || '').split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+  let all = uniqueSorted([...persons, ...split(value)]);
 
-  function render() {
-    container.innerHTML = `
-      <div class="radio-group person-chips">
-        ${all.length ? all.map((p) => `
-          <label class="choice"><input type="checkbox" value="${esc(p)}" ${selected.has(p) ? 'checked' : ''} ${disabled ? 'disabled' : ''}> ${esc(p)}</label>`).join('')
-          : '<span class="meta">Noch keine Personen – unten eintragen.</span>'}
+  container.innerHTML = `
+    <div class="multi-select">
+      <div class="ms-row">
+        <input type="text" class="ms-input" value="${esc(split(value).join(', '))}" placeholder="Namen eintragen oder auswählen" autocomplete="off" ${disabled ? 'disabled' : ''}>
+        ${disabled ? '' : '<button type="button" class="ms-toggle" aria-label="Personen auswählen">▾</button>'}
       </div>
-      ${disabled ? '' : `
-      <div class="add-person">
-        <input type="text" placeholder="Neuen Namen eintragen">
-        <button type="button" class="btn secondary">Hinzufügen</button>
-      </div>`}`;
-    container.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      <div class="ms-panel" hidden></div>
+    </div>`;
+  const input = container.querySelector('.ms-input');
+  const toggle = container.querySelector('.ms-toggle');
+  const panel = container.querySelector('.ms-panel');
+
+  function renderPanel() {
+    const chosen = new Set(split(input.value));
+    all = uniqueSorted([...all, ...chosen]);
+    panel.innerHTML = `
+      ${all.length ? all.map((p) => `
+        <label class="ms-item"><input type="checkbox" value="${esc(p)}" ${chosen.has(p) ? 'checked' : ''}> ${esc(p)}</label>`).join('')
+        : '<p class="meta">Noch keine Personen gespeichert – Namen einfach oben eintippen.</p>'}
+      <button type="button" class="btn small ms-done">Fertig</button>`;
+    panel.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
       cb.onchange = () => {
-        if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+        const names = split(input.value).filter((n) => n !== cb.value);
+        if (cb.checked) names.push(cb.value);
+        input.value = names.join(', ');
         onChange?.();
       };
     });
-    const input = container.querySelector('.add-person input');
-    const add = () => {
-      const name = input.value.trim();
-      if (!name) return;
-      selected.add(name);
-      all = uniqueSorted([...all, name]);
-      render();
-      onChange?.();
-    };
-    if (input) {
-      container.querySelector('.add-person button').onclick = add;
-      input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
-    }
+    panel.querySelector('.ms-done').onclick = close;
   }
-  render();
+
+  function close() {
+    panel.hidden = true;
+    toggle?.classList.remove('open');
+  }
+
+  if (toggle) {
+    toggle.onclick = () => {
+      if (!panel.hidden) return close();
+      renderPanel();
+      panel.hidden = false;
+      toggle.classList.add('open');
+    };
+  }
+  input.onchange = () => {
+    input.value = split(input.value).join(', ');
+    if (!panel.hidden) renderPanel();
+    onChange?.();
+  };
 
   return {
-    // Ein noch nicht per „Hinzufügen“ übernommener Name wird mitgenommen
-    getValue() {
-      const pending = container.querySelector('.add-person input')?.value.trim();
-      return uniqueSorted([...selected, pending]).join(', ');
-    },
+    getValue: () => split(input.value).join(', '),
   };
 }

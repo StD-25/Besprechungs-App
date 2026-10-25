@@ -82,5 +82,6 @@ export async function render() {
       { label: '⤓ PDF speichern', cls: 'secondary', close: false, run: () => download(pdf.blob, pdf.filename) },
       { label: 'Schließen', cls: 'danger-outline' },
     ]);
+    location.hash = '#/';
   };
 }
