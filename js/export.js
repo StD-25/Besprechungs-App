@@ -73,7 +73,7 @@ export async function reportImagesZip(report) {
   return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt, 'zip', `_${model.versionLabel(report.pdfVersion || 1)}_Bilder`), count: entries.length };
 }
 
-export async function todosPdf(todos, { person, status }) {
+export async function todosPdf(todos, { person, status, search = '' }) {
   const rows = [];
   for (const t of todos) {
     rows.push({
@@ -95,6 +95,7 @@ export async function todosPdf(todos, { person, status }) {
     info: [
       ['Zuständig', who],
       ['Status', status],
+      ...(search ? [['Suche', search]] : []),
       ['Anzahl', String(todos.length)],
     ],
     columns: [

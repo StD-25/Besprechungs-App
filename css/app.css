@@ -411,3 +411,33 @@ body.quick .footer-link { display: block; text-align: center; margin-top: 14px; 
   border-top: 1px solid var(--blue-200);
 }
 .pdf-actions .btn { flex: 1 1 45%; }
+
+/* Startseite: oberer Teil fest, nur die Liste der offenen Berichte scrollt */
+main#app.split {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--topbar-h, 56px));
+  padding-bottom: calc(var(--tabbar-h, 64px) + 8px);
+  overflow: hidden;
+}
+main#app.split .home-top { flex: none; }
+main#app.split .home-top .card { padding: 12px 14px; margin-bottom: 10px; }
+main#app.split .home-top label { margin: 10px 0 4px; }
+main#app.split .home-top h2 { margin: 12px 0 8px; }
+main#app.split .home-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+/* Sehr kleiner Bildschirm oder Querformat: ganze Seite scrollt wie bisher */
+@media (max-height: 560px) {
+  main#app.split { display: block; height: auto; overflow: visible; padding-bottom: 96px; }
+  main#app.split .home-list { overflow: visible; }
+}
+
+#fSearch { margin-top: 8px; }
+main#app.split .home-top .ms-panel { max-height: 30vh; }

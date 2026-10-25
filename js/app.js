@@ -17,6 +17,7 @@ const routes = [
 
 async function route() {
   releaseObjectURLs();
+  document.getElementById('app').classList.remove('split');
   const hash = location.hash || '#/';
   for (const [re, handler] of routes) {
     const m = hash.match(re);
@@ -32,6 +33,15 @@ async function route() {
     }
   }
 }
+
+// Höhen von Kopf- und Tab-Leiste für das Layout mit fester Startseite
+function measureBars() {
+  const root = document.documentElement.style;
+  root.setProperty('--topbar-h', `${document.querySelector('header.topbar').offsetHeight}px`);
+  root.setProperty('--tabbar-h', `${document.querySelector('nav.tabbar').offsetHeight}px`);
+}
+measureBars();
+window.addEventListener('resize', measureBars);
 
 window.addEventListener('hashchange', route);
 route();
