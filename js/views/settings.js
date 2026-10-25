@@ -89,16 +89,19 @@ export async function render() {
 
     <h2>Datensicherung</h2>
     <div class="card">
-      <p class="meta">Alle Daten liegen nur auf diesem Gerät. Regelmäßig sichern, z.B. vor einem Handywechsel.</p>
-      <div class="btn-row">
-        <button class="btn" id="export">Sicherung speichern</button>
-        <label class="btn secondary" style="margin:0">Sicherung laden
-          <input type="file" id="import" accept="application/json,.json" hidden>
-        </label>
-      </div>
-      <p class="meta" id="storage"></p>
-      <p class="meta">Version ${APP_VERSION}</p>
-    </div>`;
+      <details id="backupDetails">
+        <summary class="settings-summary">Sicherung speichern / laden</summary>
+        <p class="meta">Alle Daten liegen nur auf diesem Gerät. Regelmäßig sichern, z.B. vor einem Handywechsel.</p>
+        <div class="btn-row">
+          <button class="btn" id="export">Sicherung speichern</button>
+          <label class="btn secondary" style="margin:0">Sicherung laden
+            <input type="file" id="import" accept="application/json,.json" hidden>
+          </label>
+        </div>
+        <p class="meta" id="storage"></p>
+      </details>
+    </div>
+    <p class="meta" style="text-align:center">Version ${APP_VERSION}</p>`;
 
   // Gründe und Bereiche: jede Änderung wird sofort gespeichert
   // Aufgeklappte Abschnitte bleiben nach dem Neuzeichnen offen
