@@ -61,7 +61,7 @@ export async function render({ id, pid }) {
 
   const form = document.getElementById('pointForm');
 
-  const area = areaPicker(document.getElementById('areaPicker'), { value: point.area });
+  const area = areaPicker(document.getElementById('areaPicker'), { value: point.area, areas: await model.listAreas() });
   const assignee = singlePerson(document.getElementById('assigneePicker'), { value: point.assignee, persons, id: 'assignee' });
 
   const photosEl = document.getElementById('photos');

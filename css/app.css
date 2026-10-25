@@ -520,3 +520,4 @@ main#app.split .home-list {
 }
 
 #fSearch { margin-top: 8px; }
+.settings-summary { font-weight: 600; color: var(--blue-800); cursor: pointer; padding: 4px 0; }

@@ -8,7 +8,7 @@ import { areaPicker } from '../js/core/areaPicker.js';
 
 const $ = (id) => document.getElementById(id);
 let assignee;
-const area = areaPicker($('areaPicker'));
+const area = areaPicker($('areaPicker'), { areas: await model.listAreas() });
 let files = [];
 
 async function fill() {

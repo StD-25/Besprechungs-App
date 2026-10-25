@@ -1,6 +1,6 @@
 // Fachlogik: Berichte, Punkte (offene Punkte/Aufgaben), Fotos, Personen, Einstellungen.
 import * as db from './core/db.js';
-import { REASONS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
+import { REASONS, AREAS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
 import { resizeImage } from './core/image.js';
 import { formatDate, formatDateTime, todayISO } from './core/filename.js';
 
@@ -34,6 +34,13 @@ export async function listReasons() {
 }
 
 export const saveReasons = (list) => setSetting('reasons', list);
+
+// ---- Bereiche (in den Einstellungen änderbar; „Sonstiges“ ist immer zusätzlich verfügbar) ----
+export async function listAreas() {
+  return (await getSetting('areas', null)) || [...AREAS];
+}
+
+export const saveAreas = (list) => setSetting('areas', list);
 
 export const newestFirst = (a, b) => b.createdAt - a.createdAt;
 

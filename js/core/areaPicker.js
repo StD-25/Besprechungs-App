@@ -1,19 +1,19 @@
 // Bereichsauswahl: eine aufklappbare Liste + „Sonstiges“ mit freiem Text.
-import { AREAS, AREA_OTHER } from '../config.js';
+import { AREA_OTHER } from '../config.js';
 import { esc } from './ui.js';
 
 let counter = 0;
 
-export function areaPicker(container, { value = '' } = {}) {
+export function areaPicker(container, { value = '', areas = [] } = {}) {
   const name = `area${++counter}`;
-  const isOther = !!value && !AREAS.includes(value);
+  const isOther = !!value && !areas.includes(value);
   const choice = isOther ? AREA_OTHER : value;
   container.innerHTML = `
     <div class="selected-area" ${value ? '' : 'hidden'}>${esc(value)}</div>
     <details class="area-group">
       <summary>Bereich auswählen</summary>
       <div class="radio-group">
-        ${[...AREAS, AREA_OTHER].map((a) => `<label class="choice"><input type="radio" name="${name}" value="${esc(a)}" ${a === choice ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
+        ${[...areas, AREA_OTHER].map((a) => `<label class="choice"><input type="radio" name="${name}" value="${esc(a)}" ${a === choice ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
       </div>
     </details>
     <input type="text" class="area-other" value="${isOther ? esc(value) : ''}" placeholder="Bereich eingeben" ${isOther ? '' : 'hidden'}>`;

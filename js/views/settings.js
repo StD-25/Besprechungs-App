@@ -4,6 +4,8 @@ import { app, esc, setHeader, setActiveTab, toast, confirmDialog } from '../core
 import { blobToDataURL, dataURLToBlob } from '../core/image.js';
 import { download } from '../core/share.js';
 import { buildFilename } from '../core/filename.js';
+import { listEditor } from '../core/listEditor.js';
+import { AREAS } from '../config.js';
 
 const STORES = ['reports', 'points', 'photos', 'persons', 'settings'];
 
@@ -37,6 +39,7 @@ export async function render() {
   const persons = await model.listPersons();
   const myName = await model.getSetting('myName');
   const reasons = await model.listEditableReasons();
+  const areas = await model.listAreas();
   app().innerHTML = `
     <h2>Mein Name</h2>
     <div class="card">
@@ -49,17 +52,17 @@ export async function render() {
     <h2>Gründe der Besprechung</h2>
     <div class="card">
       <p class="meta">Auswahl bei „Neuer Bericht“. Namen direkt im Feld ändern. „Sonstige“ (mit freiem Namen) ist immer verfügbar.</p>
-      ${reasons.map((r, i) => `
-        <div class="reason-row">
-          <input type="text" data-reason="${i}" value="${esc(r.label)}" aria-label="Grund ${i + 1}">
-          <button class="btn secondary small" data-move="${i}:-1" ${i === 0 ? 'disabled' : ''} aria-label="nach oben">↑</button>
-          <button class="btn secondary small" data-move="${i}:1" ${i === reasons.length - 1 ? 'disabled' : ''} aria-label="nach unten">↓</button>
-          <button class="btn danger-outline small" data-remove="${i}">Entfernen</button>
-        </div>`).join('')}
-      <form id="addReason" style="display:flex;gap:8px;margin-top:12px">
-        <input type="text" id="reasonName" placeholder="Neuen Grund hinzufügen">
-        <button class="btn" type="submit">＋</button>
-      </form>
+      <div id="reasonEditor"></div>
+    </div>
+
+    <h2>Bereiche</h2>
+    <div class="card">
+      <details id="areaDetails">
+        <summary class="settings-summary">Bereiche (${areas.length}) bearbeiten</summary>
+        <p class="meta">Auswahl bei „Neuer Punkt“ und in der Kurznachricht. „Sonstiges“ (mit freiem Text) ist immer verfügbar.</p>
+        <div id="areaEditor"></div>
+        <button type="button" class="btn danger-outline small" id="resetAreas" style="margin-top:14px">Auf Standard zurücksetzen</button>
+      </details>
     </div>
 
     <h2>Personen</h2>
@@ -86,43 +89,31 @@ export async function render() {
       <p class="meta" id="storage"></p>
     </div>`;
 
-  // Gründe: jede Änderung sofort speichern
-  const saveReasons = async (list, msg) => {
-    await model.saveReasons(list);
-    toast(msg);
-    render();
-  };
-  app().querySelectorAll('[data-reason]').forEach((input) => {
-    input.onchange = () => {
-      const label = input.value.trim();
-      if (!label) { toast('Der Name darf nicht leer sein.'); input.value = reasons[input.dataset.reason].label; return; }
-      reasons[input.dataset.reason].label = label;
-      saveReasons(reasons, 'Grund gespeichert');
-    };
+  // Gründe und Bereiche: jede Änderung wird sofort gespeichert
+  listEditor(document.getElementById('reasonEditor'), {
+    items: reasons,
+    onSave: (list) => model.saveReasons(list),
+    makeItem: (label) => ({ id: db.uid(), label }),
+    noun: 'Grund',
+    addPlaceholder: 'Neuen Grund hinzufügen',
   });
-  app().querySelectorAll('[data-move]').forEach((b) => {
-    b.onclick = () => {
-      const [i, dir] = b.dataset.move.split(':').map(Number);
-      [reasons[i], reasons[i + dir]] = [reasons[i + dir], reasons[i]];
-      saveReasons(reasons, 'Reihenfolge gespeichert');
-    };
+  const areaSummary = app().querySelector('#areaDetails summary');
+  const areaEditor = listEditor(document.getElementById('areaEditor'), {
+    items: areas.map((label) => ({ label })),
+    onSave: async (list) => {
+      await model.saveAreas(list.map((it) => it.label));
+      areaSummary.textContent = `Bereiche (${list.length}) bearbeiten`;
+    },
+    noun: 'Bereich',
+    addPlaceholder: 'Neuen Bereich hinzufügen',
   });
-  app().querySelectorAll('[data-remove]').forEach((b) => {
-    b.onclick = async () => {
-      const r = reasons[b.dataset.remove];
-      if (await confirmDialog(`Grund „${r.label}“ entfernen?\n\nBestehende Berichte behalten ihren Namen.`, { ok: 'Entfernen', danger: true })) {
-        reasons.splice(Number(b.dataset.remove), 1);
-        saveReasons(reasons, 'Grund entfernt');
-      }
-    };
-  });
-  document.getElementById('addReason').onsubmit = (e) => {
-    e.preventDefault();
-    const label = document.getElementById('reasonName').value.trim();
-    if (!label) return;
-    if (reasons.some((r) => r.label.toLowerCase() === label.toLowerCase())) { toast('Diesen Grund gibt es schon.'); return; }
-    reasons.push({ id: db.uid(), label });
-    saveReasons(reasons, 'Grund hinzugefügt');
+  document.getElementById('resetAreas').onclick = async () => {
+    if (await confirmDialog('Bereiche auf die ursprüngliche Liste zurücksetzen?', { ok: 'Zurücksetzen', danger: true })) {
+      await model.saveAreas([...AREAS]);
+      areaEditor.setItems(AREAS.map((label) => ({ label })));
+      areaSummary.textContent = `Bereiche (${AREAS.length}) bearbeiten`;
+      toast('Bereiche zurückgesetzt');
+    }
   };
 
   document.getElementById('myNameForm').onsubmit = async (e) => {
