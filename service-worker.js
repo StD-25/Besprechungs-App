@@ -1,5 +1,5 @@
 // Offline-Cache. Bei Änderungen an der App die Versionsnummer erhöhen.
-const CACHE = 'besprechungsprotokoll-v5';
+const CACHE = 'besprechungsprotokoll-v6';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/kurz-192.png', 'icons/kurz-512.png',

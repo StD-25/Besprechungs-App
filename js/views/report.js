@@ -42,7 +42,8 @@ export async function render({ id }) {
     <h2>Punkte (${points.length}${openCount ? `, ${openCount} offen` : ''})</h2>
     <div id="points">${points.length ? (await Promise.all(points.map(pointCard))).join('') : '<p class="empty">Noch keine Punkte erfasst.</p>'}</div>
     <h2>Bericht</h2>
-    <button class="btn block" id="finish">${archived ? 'PDF erstellen' : 'Bericht abschließen / PDF'}</button>
+    <button class="btn block" id="finish">${report.pdfVersion ? 'Bericht aktualisieren / PDF' : archived ? 'PDF erstellen' : 'Bericht abschließen / PDF'}</button>
+    ${report.pdfVersion ? `<div class="meta" style="margin-top:6px">Letzte Version: ${model.versionLabel(report.pdfVersion)} vom ${formatDateTime(report.pdfAt)}</div>` : ''}
     <div class="btn-row">
       ${archived
         ? '<button class="btn secondary" id="reactivate">Wieder öffnen</button>'

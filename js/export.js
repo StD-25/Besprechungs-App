@@ -2,7 +2,7 @@
 import * as model from './model.js';
 import { tablePdf } from './core/pdf.js';
 import { blobToDataURL } from './core/image.js';
-import { buildFilename, formatDateTime, formatDue, sanitize, stamp } from './core/filename.js';
+import { buildFilename, formatDate, formatDateTime, formatDue, sanitize, stamp } from './core/filename.js';
 import { makeZip } from './core/share.js';
 
 async function thumbsFor(pointId) {
@@ -15,7 +15,8 @@ async function thumbsFor(pointId) {
 const statusText = (p) => {
   if (!p.isTodo) return '–';
   const due = p.dueDate ? `\nbis ${formatDue(p.dueDate)}` : '';
-  return (p.done ? 'erledigt' : 'offen') + due;
+  if (p.done) return p.doneAt ? `erledigt am\n${formatDate(p.doneAt)}` : 'erledigt';
+  return `offen${due}`;
 };
 
 export async function reportPdf(report) {
@@ -28,12 +29,16 @@ export async function reportPdf(report) {
     });
   }
   const title = model.reportTitle(report);
+  const version = model.versionLabel(await model.nextPdfVersion(report, points));
+  const open = points.filter((p) => p.isTodo && !p.done).length;
+  const done = points.filter((p) => p.isTodo && p.done).length;
   const blob = tablePdf({
     title,
     info: [
       ['Datum', formatDateTime(report.createdAt)],
+      ['Version', `${version} · Stand: ${formatDateTime(report.pdfAt)}`],
       ['Teilnehmer', report.participants],
-      ['Punkte', `${points.length} (offen: ${points.filter((p) => p.isTodo && !p.done).length})`],
+      ['Punkte', `${points.length} (offen: ${open}, erledigt: ${done})`],
     ],
     columns: [
       { header: 'Nr.', width: 9 },
@@ -47,7 +52,7 @@ export async function reportPdf(report) {
     rows,
     imageColumn: 6,
   });
-  return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt), title };
+  return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt, 'pdf', `_${version}`), title, version };
 }
 
 // Originalfotos (separat vom PDF) als ZIP mit gleichem Namensschema.
@@ -65,7 +70,7 @@ export async function reportImagesZip(report) {
   }
   if (!entries.length) return null;
   const blob = await makeZip(entries);
-  return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt, 'zip', '_Bilder'), count: entries.length };
+  return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt, 'zip', `_${model.versionLabel(report.pdfVersion || 1)}_Bilder`), count: entries.length };
 }
 
 export async function todosPdf(todos, { person, status }) {

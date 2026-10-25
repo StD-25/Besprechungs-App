@@ -103,6 +103,25 @@ export async function getPhotos(pointId) {
   return (await db.getBy('photos', 'pointId', pointId)).sort((a, b) => a.createdAt - b.createdAt);
 }
 
+// ---- PDF-Versionen: neue Version nur, wenn sich der Inhalt geändert hat ----
+export const versionLabel = (n) => `V${String(n).padStart(2, '0')}`;
+
+export async function nextPdfVersion(report, points) {
+  const parts = [report.participants || ''];
+  for (const p of [...points].sort((a, b) => a.no - b.no)) {
+    const photos = await getPhotos(p.id);
+    parts.push([p.no, p.area, p.remark, p.assignee, p.dueDate, p.isTodo, p.done, photos.length].join('|'));
+  }
+  const signature = parts.join('\n');
+  if (!report.pdfVersion || report.pdfSignature !== signature) {
+    report.pdfVersion = (report.pdfVersion || 0) + 1;
+    report.pdfSignature = signature;
+  }
+  report.pdfAt = Date.now();
+  await saveReport(report);
+  return report.pdfVersion;
+}
+
 // Offen und Fälligkeitsdatum überschritten
 export const isOverdue = (p) => !!(p.isTodo && !p.done && p.dueDate && p.dueDate < todayISO());
 
