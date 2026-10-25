@@ -4,12 +4,14 @@ import { REASONS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
 import { resizeImage } from './core/image.js';
 import { formatDate, formatDateTime, todayISO } from './core/filename.js';
 
-export const reasonOf = (report) => REASONS.find((r) => r.id === report.reason) || REASONS[0];
+// Fest eingebaute Gründe: „Sonstige“ (freier Name) und „Kurznachricht“ (intern)
+const FIXED_REASONS = ['sonstige', 'kurznachricht'];
 
 export function reportTitle(report) {
-  const reason = reasonOf(report);
-  if (reason.id === 'kurznachricht') return `Kurznachricht ${formatDate(report.createdAt)}`;
-  return reason.id === 'sonstige' ? report.customName || 'Sonstige' : reason.label;
+  if (report.reason === 'kurznachricht') return `Kurznachricht ${formatDate(report.createdAt)}`;
+  if (report.reason === 'sonstige') return report.customName || 'Sonstige';
+  // Name wird beim Anlegen im Bericht gespeichert, damit spätere Änderungen alte Berichte nicht umbenennen
+  return report.reasonLabel || REASONS.find((r) => r.id === report.reason)?.label || 'Bericht';
 }
 
 // Berichtsname mit Datum – bei Kurznachrichten steckt das Datum schon im Titel
@@ -18,15 +20,29 @@ export function reportLabel(report) {
   return report.reason === 'kurznachricht' ? title : `${title} ${formatDateTime(report.createdAt)}`;
 }
 
-export const reportFileBase = (report) => reasonOf(report).file || reportTitle(report);
+export const reportFileBase = (report) => (report.reason === 'kurznachricht' ? 'Kurznachricht' : reportTitle(report));
+
+// ---- Gründe der Besprechung (in den Einstellungen änderbar) ----
+export async function listEditableReasons() {
+  const saved = await getSetting('reasons', null);
+  return saved || REASONS.filter((r) => !FIXED_REASONS.includes(r.id)).map(({ id, label }) => ({ id, label }));
+}
+
+// Auswahl für „Neuer Bericht“: gepflegte Gründe, „Sonstige“ immer am Ende
+export async function listReasons() {
+  return [...(await listEditableReasons()), { id: 'sonstige', label: 'Sonstige' }];
+}
+
+export const saveReasons = (list) => setSetting('reasons', list);
 
 export const newestFirst = (a, b) => b.createdAt - a.createdAt;
 
 // ---- Berichte ----
-export async function createReport({ reason, customName, participants }) {
+export async function createReport({ reason, reasonLabel = '', customName, participants }) {
   const report = {
     id: db.uid(),
     reason,
+    reasonLabel,
     customName: customName || '',
     participants: participants || '',
     createdAt: Date.now(),

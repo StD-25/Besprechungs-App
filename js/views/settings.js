@@ -36,6 +36,7 @@ export async function render() {
   setActiveTab('settings');
   const persons = await model.listPersons();
   const myName = await model.getSetting('myName');
+  const reasons = await model.listEditableReasons();
   app().innerHTML = `
     <h2>Mein Name</h2>
     <div class="card">
@@ -45,6 +46,22 @@ export async function render() {
         <button class="btn" type="submit">Speichern</button>
       </form>
     </div>
+    <h2>Gründe der Besprechung</h2>
+    <div class="card">
+      <p class="meta">Auswahl bei „Neuer Bericht“. Namen direkt im Feld ändern. „Sonstige“ (mit freiem Namen) ist immer verfügbar.</p>
+      ${reasons.map((r, i) => `
+        <div class="reason-row">
+          <input type="text" data-reason="${i}" value="${esc(r.label)}" aria-label="Grund ${i + 1}">
+          <button class="btn secondary small" data-move="${i}:-1" ${i === 0 ? 'disabled' : ''} aria-label="nach oben">↑</button>
+          <button class="btn secondary small" data-move="${i}:1" ${i === reasons.length - 1 ? 'disabled' : ''} aria-label="nach unten">↓</button>
+          <button class="btn danger-outline small" data-remove="${i}">Entfernen</button>
+        </div>`).join('')}
+      <form id="addReason" style="display:flex;gap:8px;margin-top:12px">
+        <input type="text" id="reasonName" placeholder="Neuen Grund hinzufügen">
+        <button class="btn" type="submit">＋</button>
+      </form>
+    </div>
+
     <h2>Personen</h2>
     <div class="card">
       <form id="addPerson" style="display:flex;gap:8px">
@@ -68,6 +85,45 @@ export async function render() {
       </div>
       <p class="meta" id="storage"></p>
     </div>`;
+
+  // Gründe: jede Änderung sofort speichern
+  const saveReasons = async (list, msg) => {
+    await model.saveReasons(list);
+    toast(msg);
+    render();
+  };
+  app().querySelectorAll('[data-reason]').forEach((input) => {
+    input.onchange = () => {
+      const label = input.value.trim();
+      if (!label) { toast('Der Name darf nicht leer sein.'); input.value = reasons[input.dataset.reason].label; return; }
+      reasons[input.dataset.reason].label = label;
+      saveReasons(reasons, 'Grund gespeichert');
+    };
+  });
+  app().querySelectorAll('[data-move]').forEach((b) => {
+    b.onclick = () => {
+      const [i, dir] = b.dataset.move.split(':').map(Number);
+      [reasons[i], reasons[i + dir]] = [reasons[i + dir], reasons[i]];
+      saveReasons(reasons, 'Reihenfolge gespeichert');
+    };
+  });
+  app().querySelectorAll('[data-remove]').forEach((b) => {
+    b.onclick = async () => {
+      const r = reasons[b.dataset.remove];
+      if (await confirmDialog(`Grund „${r.label}“ entfernen?\n\nBestehende Berichte behalten ihren Namen.`, { ok: 'Entfernen', danger: true })) {
+        reasons.splice(Number(b.dataset.remove), 1);
+        saveReasons(reasons, 'Grund entfernt');
+      }
+    };
+  });
+  document.getElementById('addReason').onsubmit = (e) => {
+    e.preventDefault();
+    const label = document.getElementById('reasonName').value.trim();
+    if (!label) return;
+    if (reasons.some((r) => r.label.toLowerCase() === label.toLowerCase())) { toast('Diesen Grund gibt es schon.'); return; }
+    reasons.push({ id: db.uid(), label });
+    saveReasons(reasons, 'Grund hinzugefügt');
+  };
 
   document.getElementById('myNameForm').onsubmit = async (e) => {
     e.preventDefault();

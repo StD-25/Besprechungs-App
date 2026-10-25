@@ -1,5 +1,4 @@
 import * as model from '../model.js';
-import { REASONS } from '../config.js';
 import { app, esc, setHeader, setActiveTab, toast } from '../core/ui.js';
 import { formatDateTime } from '../core/filename.js';
 import { multiPerson } from '../core/personPicker.js';
@@ -31,6 +30,7 @@ export async function render() {
   setHeader('Besprechungsprotokoll');
   setActiveTab('home');
   const reports = await model.listReports('open');
+  const reasons = await model.listReasons();
   // Oberer Teil bleibt stehen, nur die Liste der offenen Berichte scrollt
   app().classList.add('split');
   app().innerHTML = `
@@ -40,7 +40,7 @@ export async function render() {
       <form id="newReport">
         <label for="reason">Grund der Besprechung</label>
         <select id="reason">
-          ${REASONS.filter((r) => !r.hidden).map((r) => `<option value="${r.id}">${esc(r.label)}</option>`).join('')}
+          ${reasons.map((r) => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('')}
         </select>
         <div id="customWrap" hidden>
           <label for="customName">Name der Besprechung</label>
@@ -74,6 +74,7 @@ export async function render() {
     }
     const report = await model.createReport({
       reason,
+      reasonLabel: reasons.find((r) => r.id === reason)?.label || '',
       customName,
       participants: participants.getValue(),
     });

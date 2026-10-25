@@ -18,7 +18,8 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 - Aufgabenliste: Filter nach Person oder alle, offen/erledigt, Zuweisung ändern, abhaken, PDF
 - Teilnehmer und Zuständigkeit werden aus allen jemals eingetragenen Personen ausgewählt
   (neue Namen kommen automatisch in die Liste)
-- Archiv, Personenverwaltung, „Mein Name“, Datensicherung (Backup speichern/laden)
+- Archiv, Einstellungen: „Mein Name“, Gründe der Besprechung (umbenennen, sortieren, hinzufügen,
+  entfernen), Personenverwaltung, Datensicherung (Backup speichern/laden)
 
 ## Kurznachricht (zweites Icon mit „K“)
 Kleines Fenster zum schnellen Erfassen: Datum/Uhrzeit automatisch, Name (aus „Mein Name“),
