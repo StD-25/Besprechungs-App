@@ -1,24 +1,45 @@
 // Kurznachricht: schnell einen offenen Punkt erfassen.
 // Nutzt dieselbe Datenbank wie das Besprechungsprotokoll (gleiche Herkunft).
 import * as model from '../js/model.js';
-import { esc, toast } from '../js/core/ui.js';
+import { toast, objectURL, releaseObjectURLs } from '../js/core/ui.js';
 import { formatDateTime } from '../js/core/filename.js';
+import { singlePerson } from '../js/core/personPicker.js';
 
 const $ = (id) => document.getElementById(id);
+let assignee;
+let files = [];
 
 async function fill() {
   $('stamp').textContent = formatDateTime(Date.now());
-  const persons = await model.listPersons();
-  $('persons').innerHTML = persons.map((p) => `<option value="${esc(p)}">`).join('');
+  const current = assignee?.getValue() || '';
+  assignee = singlePerson($('assigneePicker'), { value: current, persons: await model.listPersons(), id: 'assignee' });
   if (!$('author').value) $('author').value = await model.getSetting('myName');
+}
+
+function renderPhotos() {
+  releaseObjectURLs();
+  $('photos').innerHTML = files.map((f, i) => `
+    <div class="ph"><img class="thumb" src="${objectURL(f)}" alt=""><button type="button" data-i="${i}" aria-label="Foto entfernen">×</button></div>`).join('');
+  $('photos').querySelectorAll('button[data-i]').forEach((b) => {
+    b.onclick = () => { files.splice(Number(b.dataset.i), 1); renderPhotos(); };
+  });
+}
+
+for (const id of ['camera', 'gallery']) {
+  $(id).onchange = () => {
+    files.push(...$(id).files);
+    $(id).value = '';
+    renderPhotos();
+  };
 }
 
 function reset() {
   $('text').value = '';
-  $('assignee').value = '';
   $('dueDate').value = '';
+  assignee.reset();
+  files = [];
+  renderPhotos();
   fill();
-  $('text').focus();
 }
 
 $('cancel').onclick = () => {
@@ -36,12 +57,14 @@ $('quickForm').onsubmit = async (e) => {
   }
   const author = $('author').value.trim();
   $('save').disabled = true;
+  $('save').textContent = 'Speichert …';
   try {
     await model.addQuickMessage({
       author,
       text,
-      assignee: $('assignee').value.trim(),
+      assignee: assignee.getValue(),
       dueDate: $('dueDate').value,
+      files,
     });
     // Ersten eingegebenen Namen als „Mein Name“ merken
     if (author && !(await model.getSetting('myName'))) await model.setSetting('myName', author);
@@ -52,6 +75,7 @@ $('quickForm').onsubmit = async (e) => {
     toast('Fehler beim Speichern: ' + err.message, 4000);
   } finally {
     $('save').disabled = false;
+    $('save').textContent = 'Speichern';
   }
 };
 

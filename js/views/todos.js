@@ -30,7 +30,7 @@ export async function render() {
           <div>${t.area ? `<span class="badge">${esc(t.area)}</span>` : ''} <span class="badge ${t.done ? 'done' : 'open'}">${t.done ? 'erledigt' : 'offen'}</span>
             ${t.dueDate ? `<span class="badge ${model.isOverdue(t) ? 'overdue' : ''}">bis ${formatDue(t.dueDate)}</span>` : ''}</div>
           <div class="remark">${esc(t.remark)}</div>
-          <div class="meta">${formatDateTime(t.createdAt)} · <a href="#/report/${t.reportId}/point/${t.id}">${esc(model.reportTitle(t.report))} ${formatDateTime(t.report.createdAt)}</a></div>
+          <div class="meta">${formatDateTime(t.createdAt)} · <a href="#/report/${t.reportId}/point/${t.id}">${esc(model.reportLabel(t.report))}</a></div>
           <select data-assign="${t.id}" style="margin-top:8px">
             <option value="">– nicht zugewiesen –</option>
             ${persons.map((p) => `<option ${p === t.assignee ? 'selected' : ''}>${esc(p)}</option>`).join('')}

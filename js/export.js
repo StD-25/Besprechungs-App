@@ -74,7 +74,7 @@ export async function todosPdf(todos, { person, status }) {
     rows.push({
       cells: [
         formatDateTime(t.createdAt),
-        `${model.reportTitle(t.report)}\n${formatDateTime(t.report.createdAt)}`,
+        model.reportLabel(t.report),
         t.area || '',
         t.remark || '',
         t.assignee || '',

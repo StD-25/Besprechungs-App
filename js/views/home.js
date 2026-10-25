@@ -2,6 +2,7 @@ import * as model from '../model.js';
 import { REASONS } from '../config.js';
 import { app, esc, setHeader, setActiveTab, toast } from '../core/ui.js';
 import { formatDateTime } from '../core/filename.js';
+import { multiPerson } from '../core/personPicker.js';
 
 export async function reportCards(reports) {
   if (!reports.length) return '<p class="empty">Keine Berichte vorhanden.</p>';
@@ -43,9 +44,8 @@ export async function render() {
           <label for="customName">Name der Besprechung</label>
           <input type="text" id="customName" placeholder="z.B. Abteilungsrunde">
         </div>
-        <label for="participants">Teilnehmer</label>
-        <input type="text" id="participants" placeholder="Namen, durch Komma getrennt" list="personsList" autocomplete="off">
-        <datalist id="personsList"></datalist>
+        <label>Teilnehmer</label>
+        <div id="participants"></div>
         <button class="btn block" style="margin-top:16px" type="submit">Bericht starten</button>
       </form>
     </div>
@@ -53,8 +53,7 @@ export async function render() {
     <h2>Offene Berichte</h2>
     <div id="reports">${await reportCards(reports)}</div>`;
 
-  const persons = await model.listPersons();
-  document.getElementById('personsList').innerHTML = persons.map((p) => `<option value="${esc(p)}">`).join('');
+  const participants = multiPerson(document.getElementById('participants'), { persons: await model.listPersons() });
 
   const form = document.getElementById('newReport');
   const customWrap = document.getElementById('customWrap');
@@ -72,7 +71,7 @@ export async function render() {
     const report = await model.createReport({
       reason,
       customName,
-      participants: document.getElementById('participants').value.trim(),
+      participants: participants.getValue(),
     });
     location.hash = `#/report/${report.id}`;
   };

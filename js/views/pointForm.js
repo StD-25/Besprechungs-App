@@ -1,7 +1,8 @@
 import * as model from '../model.js';
-import { AREA_GROUPS } from '../config.js';
+import { AREAS, AREA_OTHER } from '../config.js';
 import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL } from '../core/ui.js';
 import { formatDateTime } from '../core/filename.js';
+import { singlePerson } from '../core/personPicker.js';
 
 export async function render({ id, pid }) {
   const report = await model.getReport(id);
@@ -19,7 +20,9 @@ export async function render({ id, pid }) {
   const existingPhotos = isNew ? [] : await model.getPhotos(pid);
   const removedPhotoIds = [];
   const newFiles = [];
-  const persons = new Set([...(await model.listPersons()), ...model.splitNames(report.participants)]);
+  const persons = [...(await model.listPersons()), ...model.splitNames(report.participants)];
+  const isOther = !!point.area && !AREAS.includes(point.area);
+  const areaChoice = isOther ? AREA_OTHER : point.area;
 
   app().innerHTML = `
     <form id="pointForm">
@@ -27,20 +30,19 @@ export async function render({ id, pid }) {
 
       <label>Bereich${report.reason === 'kurznachricht' ? ' (optional)' : ''}</label>
       <div id="areaChip" class="selected-area" ${point.area ? '' : 'hidden'}>${esc(point.area)}</div>
-      ${AREA_GROUPS.map((g) => `
-        <details class="area-group">
-          <summary>${esc(g.name)}</summary>
-          <div class="radio-group">
-            ${g.areas.map((a) => `<label class="choice"><input type="radio" name="area" value="${esc(a)}" ${a === point.area ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
-          </div>
-        </details>`).join('')}
+      <details class="area-group">
+        <summary>Bereich auswählen</summary>
+        <div class="radio-group">
+          ${[...AREAS, AREA_OTHER].map((a) => `<label class="choice"><input type="radio" name="area" value="${esc(a)}" ${a === areaChoice ? 'checked' : ''}> ${esc(a)}</label>`).join('')}
+        </div>
+      </details>
+      <input type="text" id="areaOther" value="${isOther ? esc(point.area) : ''}" placeholder="Bereich eingeben" ${isOther ? '' : 'hidden'}>
 
       <label for="remark">Offener Punkt/Beschreibung</label>
       <textarea id="remark" placeholder="Was ist offen bzw. aufgefallen?">${esc(point.remark)}</textarea>
 
       <label for="assignee">Zuständigkeit</label>
-      <input type="text" id="assignee" list="assigneeList" value="${esc(point.assignee)}" placeholder="Person auswählen oder eintragen" autocomplete="off">
-      <datalist id="assigneeList">${[...persons].map((p) => `<option value="${esc(p)}">`).join('')}</datalist>
+      <div id="assigneePicker"></div>
 
       <label for="dueDate">Erledigen bis <span class="meta">(optional)</span></label>
       <input type="date" id="dueDate" value="${esc(point.dueDate || '')}">
@@ -70,19 +72,17 @@ export async function render({ id, pid }) {
 
   // Bereich wählen → Gruppe schließt sich, Auswahl wird angezeigt
   const chip = document.getElementById('areaChip');
+  const areaOther = document.getElementById('areaOther');
   form.querySelectorAll('input[name="area"]').forEach((r) => {
     r.onchange = () => {
       form.querySelectorAll('details.area-group').forEach((d) => { d.open = false; });
       chip.textContent = r.value;
       chip.hidden = false;
+      areaOther.hidden = r.value !== AREA_OTHER;
+      if (!areaOther.hidden) areaOther.focus();
     };
   });
-  // Nur eine Gruppe gleichzeitig offen
-  form.querySelectorAll('details.area-group').forEach((d) => {
-    d.addEventListener('toggle', () => {
-      if (d.open) form.querySelectorAll('details.area-group').forEach((o) => { if (o !== d) o.open = false; });
-    });
-  });
+  const assignee = singlePerson(document.getElementById('assigneePicker'), { value: point.assignee, persons, id: 'assignee' });
 
   const photosEl = document.getElementById('photos');
   function renderPhotos() {
@@ -115,7 +115,9 @@ export async function render({ id, pid }) {
 
   form.onsubmit = async (e) => {
     e.preventDefault();
-    const area = form.querySelector('input[name="area"]:checked')?.value || '';
+    const choice = form.querySelector('input[name="area"]:checked')?.value || '';
+    const area = choice === AREA_OTHER ? areaOther.value.trim() : choice;
+    if (choice === AREA_OTHER && !area) { toast('Bitte den Bereich eingeben.'); areaOther.focus(); return; }
     const remark = document.getElementById('remark').value.trim();
     if (!area && report.reason !== 'kurznachricht') { toast('Bitte einen Bereich auswählen.'); return; }
     if (!remark && !newFiles.length && !existingPhotos.length) { toast('Bitte einen offenen Punkt/eine Beschreibung oder ein Foto erfassen.'); return; }
@@ -124,7 +126,7 @@ export async function render({ id, pid }) {
     saveBtn.textContent = 'Speichert …';
     point.area = area;
     point.remark = remark;
-    point.assignee = document.getElementById('assignee').value.trim();
+    point.assignee = assignee.getValue();
     point.dueDate = document.getElementById('dueDate').value;
     point.isTodo = document.getElementById('isTodo').checked;
     const doneEl = document.getElementById('done');

@@ -18,6 +18,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -333,3 +334,10 @@ body.quick .quick-body { padding: 4px 16px 16px; }
 body.quick .quick-body label { margin-top: 10px; }
 body.quick .stamp { color: var(--muted); font-size: 0.9rem; margin-top: 10px; }
 body.quick .footer-link { display: block; text-align: center; margin-top: 14px; color: var(--blue-600); }
+
+/* Personenauswahl (Teilnehmer) */
+.person-chips { margin-bottom: 8px; }
+.person-chips input[type="checkbox"] { accent-color: var(--blue-800); }
+.add-person { display: flex; gap: 8px; }
+.add-person .btn { flex: 0 0 auto; }
+#areaOther { margin-top: 8px; }

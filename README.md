@@ -7,8 +7,8 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 
 ## Funktionen
 - Neuer Bericht: Grund auswählen (bei „Sonstige“ eigener Name), Teilnehmer eintragen
-- Neuer Punkt: Datum/Uhrzeit automatisch, Bereich (Halle 1–8, VB 1–17, Station 1–4,
-  Außenbereich, Parkplatz), Offener Punkt/Beschreibung, Zuständigkeit, Erledigen bis (optional),
+- Neuer Punkt: Datum/Uhrzeit automatisch, Bereich aus einer Liste (Halle 1–8, VB 1–17, Station 1–4,
+  Außenbereich, Parkplatz oder „Sonstiges“ mit freiem Text), Offener Punkt/Beschreibung, Zuständigkeit, Erledigen bis (optional),
   Fotos (Kamera oder Galerie)
 - Neueste Punkte stehen oben; Berichte bleiben offen, bis sie archiviert werden
 - Bericht abschließen → PDF mit Tabelle und kleinen Vorschaubildern (geringe Dateigröße)
@@ -16,11 +16,13 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
   - Originalfotos separat: `SafetyWalk_JJJJ-MM-TT_HH-MM_Bilder.zip`
   - „Per E-Mail senden“ öffnet den Android-Teilen-Dialog (Gmail, Outlook …) mit PDF als Anhang
 - Aufgabenliste: Filter nach Person oder alle, offen/erledigt, Zuweisung ändern, abhaken, PDF
+- Teilnehmer und Zuständigkeit werden aus allen jemals eingetragenen Personen ausgewählt
+  (neue Namen kommen automatisch in die Liste)
 - Archiv, Personenverwaltung, „Mein Name“, Datensicherung (Backup speichern/laden)
 
 ## Kurznachricht (zweites Icon mit „K“)
 Kleines Fenster zum schnellen Erfassen: Datum/Uhrzeit automatisch, Name (aus „Mein Name“),
-Offener Punkt/Beschreibung (Pflicht), Zuständigkeit, Erledigen bis (optional).
+Offener Punkt/Beschreibung (Pflicht), Zuständigkeit, Erledigen bis (optional), Fotos (optional).
 Jede Kurznachricht wird automatisch als offene Aufgabe in den Bericht
 „Kurznachricht TT.MM.JJJJ“ des jeweiligen Tages übernommen.
 

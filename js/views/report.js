@@ -1,6 +1,7 @@
 import * as model from '../model.js';
 import { app, esc, setHeader, setActiveTab, toast, confirmDialog, actionDialog, objectURL } from '../core/ui.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
+import { multiPerson } from '../core/personPicker.js';
 import { download, shareFile } from '../core/share.js';
 import { reportPdf, reportImagesZip } from '../export.js';
 
@@ -33,8 +34,8 @@ export async function render({ id }) {
   app().innerHTML = `
     <div class="card">
       <div class="meta">${formatDateTime(report.createdAt)}${archived ? ' · <span class="badge">archiviert</span>' : ''}</div>
-      <label for="participants">Teilnehmer</label>
-      <input type="text" id="participants" value="${esc(report.participants)}" placeholder="Namen, durch Komma getrennt" ${archived ? 'disabled' : ''}>
+      <label>Teilnehmer</label>
+      <div id="participants"></div>
     </div>
     ${archived ? '' : '<a class="btn block" href="#/report/' + id + '/point/new">＋ Neuer Punkt</a>'}
     <h2>Punkte (${points.length}${openCount ? `, ${openCount} offen` : ''})</h2>
@@ -50,13 +51,18 @@ export async function render({ id }) {
       <button class="btn danger-outline small" id="delete">Bericht löschen</button>
     </div>`;
 
-  const part = document.getElementById('participants');
-  part.onchange = async () => {
-    report.participants = part.value.trim();
+  const part = multiPerson(document.getElementById('participants'), {
+    value: report.participants,
+    persons: await model.listPersons(),
+    disabled: archived,
+    onChange: () => saveParticipants(),
+  });
+  async function saveParticipants() {
+    report.participants = part.getValue();
     await model.saveReport(report);
     await model.addPersons(model.splitNames(report.participants));
     toast('Teilnehmer gespeichert');
-  };
+  }
 
   app().querySelectorAll('[data-point]').forEach((el) => {
     el.onclick = () => { location.hash = `#/report/${id}/point/${el.dataset.point}`; };

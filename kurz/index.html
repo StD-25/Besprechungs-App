@@ -28,11 +28,21 @@
         <input type="text" id="text" required placeholder="Was ist zu erledigen?">
 
         <label for="assignee">Zuständigkeit</label>
-        <input type="text" id="assignee" list="persons" autocomplete="off" placeholder="Person auswählen oder eintragen">
-        <datalist id="persons"></datalist>
+        <div id="assigneePicker"></div>
 
         <label for="dueDate">Erledigen bis <span class="meta">(optional)</span></label>
         <input type="date" id="dueDate">
+
+        <label>Fotos <span class="meta">(optional)</span></label>
+        <div class="btn-row">
+          <label class="btn secondary" style="margin:0">📷 Foto aufnehmen
+            <input type="file" id="camera" accept="image/*" capture="environment" hidden>
+          </label>
+          <label class="btn secondary" style="margin:0">🖼 Aus Galerie
+            <input type="file" id="gallery" accept="image/*" multiple hidden>
+          </label>
+        </div>
+        <div class="photos" id="photos"></div>
 
         <div class="action-bar">
           <button type="button" class="btn danger" id="cancel">Abbrechen</button>

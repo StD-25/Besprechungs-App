@@ -2,7 +2,7 @@
 import * as db from './core/db.js';
 import { REASONS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
 import { resizeImage } from './core/image.js';
-import { formatDate, todayISO } from './core/filename.js';
+import { formatDate, formatDateTime, todayISO } from './core/filename.js';
 
 export const reasonOf = (report) => REASONS.find((r) => r.id === report.reason) || REASONS[0];
 
@@ -10,6 +10,12 @@ export function reportTitle(report) {
   const reason = reasonOf(report);
   if (reason.id === 'kurznachricht') return `Kurznachricht ${formatDate(report.createdAt)}`;
   return reason.id === 'sonstige' ? report.customName || 'Sonstige' : reason.label;
+}
+
+// Berichtsname mit Datum – bei Kurznachrichten steckt das Datum schon im Titel
+export function reportLabel(report) {
+  const title = reportTitle(report);
+  return report.reason === 'kurznachricht' ? title : `${title} ${formatDateTime(report.createdAt)}`;
 }
 
 export const reportFileBase = (report) => reasonOf(report).file || reportTitle(report);
@@ -101,7 +107,7 @@ export async function getPhotos(pointId) {
 export const isOverdue = (p) => !!(p.isTodo && !p.done && p.dueDate && p.dueDate < todayISO());
 
 // ---- Kurznachricht: ein Bericht pro Tag, jede Nachricht eine offene Aufgabe ----
-export async function addQuickMessage({ author, text, assignee, dueDate }) {
+export async function addQuickMessage({ author, text, assignee, dueDate, files = [] }) {
   const today = formatDate(Date.now());
   let report = (await listReports('open'))
     .find((r) => r.reason === 'kurznachricht' && formatDate(r.createdAt) === today);
@@ -112,7 +118,7 @@ export async function addQuickMessage({ author, text, assignee, dueDate }) {
     await saveReport(report);
   }
   if (author) await addPersons([author]);
-  return savePoint({
+  const point = {
     reportId: report.id,
     area: '',
     remark: text,
@@ -120,7 +126,8 @@ export async function addQuickMessage({ author, text, assignee, dueDate }) {
     dueDate: dueDate || '',
     author: author || '',
     isTodo: true,
-  });
+  };
+  return savePoint(point, { newFiles: files });
 }
 
 // ---- Einstellungen ----
@@ -150,8 +157,15 @@ export async function addPersons(names) {
   for (const name of names) if (name) await db.put('persons', { name });
 }
 
+// Alle jemals eingetragenen Personen: Personenliste + Teilnehmer + Zuständige
 export async function listPersons() {
-  return (await db.getAll('persons')).map((p) => p.name).sort((a, b) => a.localeCompare(b, 'de'));
+  const [persons, reports, points] = await Promise.all([db.getAll('persons'), db.getAll('reports'), db.getAll('points')]);
+  const names = [
+    ...persons.map((p) => p.name),
+    ...reports.flatMap((r) => splitNames(r.participants)),
+    ...points.map((p) => p.assignee),
+  ].filter(Boolean);
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b, 'de'));
 }
 
 export const deletePerson = (name) => db.del('persons', name);

@@ -13,12 +13,16 @@ export const REASONS = [
 const range = (prefix, from, to) =>
   Array.from({ length: to - from + 1 }, (_, i) => `${prefix} ${from + i}`);
 
-export const AREA_GROUPS = [
-  { name: 'Hallen', areas: range('Halle', 1, 8) },
-  { name: 'VB', areas: range('VB', 1, 17) },
-  { name: 'Stationen', areas: range('Station', 1, 4) },
-  { name: 'Außen', areas: ['Außenbereich', 'Parkplatz'] },
+export const AREAS = [
+  ...range('Halle', 1, 8),
+  ...range('VB', 1, 17),
+  ...range('Station', 1, 4),
+  'Außenbereich',
+  'Parkplatz',
 ];
+
+// Letzte Auswahl im Bereich: freier Text
+export const AREA_OTHER = 'Sonstiges';
 
 // Bildgrößen: Original für den Bilder-Export, Thumbnail für das PDF.
 export const PHOTO_FULL = { maxPx: 1600, quality: 0.8 };
