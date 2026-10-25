@@ -1,7 +1,7 @@
 // Service Worker registrieren und neue App-Versionen sofort übernehmen.
 import { toast } from './ui.js';
 
-const FLAG = 'app-updated';
+const FLAG = 'besprechungsprotokoll:app-updated'; // App-Präfix: sessionStorage gilt für alle Apps unter std-25.github.io
 
 export function registerServiceWorker(url, scope) {
   if (!('serviceWorker' in navigator)) return;

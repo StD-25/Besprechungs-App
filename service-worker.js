@@ -1,6 +1,8 @@
 // Offline-Cache. Bei Änderungen an der App die Versionsnummer erhöhen
 // (zusammen mit APP_VERSION in js/config.js).
-const CACHE = 'besprechungsprotokoll-v17';
+// Präfix je App: mehrere Apps unter std-25.github.io teilen sich die Cache-Ablage
+const PREFIX = 'besprechungsprotokoll-';
+const CACHE = `${PREFIX}v18`;
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/kurz-192.png', 'icons/kurz-512.png',
@@ -23,8 +25,9 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
+    // nur eigene alte Caches löschen, nicht die anderer Apps
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
