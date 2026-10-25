@@ -14,6 +14,9 @@ export function reportTitle(report) {
   return report.reasonLabel || REASONS.find((r) => r.id === report.reason)?.label || 'Bericht';
 }
 
+// Grund ohne Datum, z.B. für Filter im Archiv
+export const reportGroup = (report) => (report.reason === 'kurznachricht' ? 'Kurznachricht' : reportTitle(report));
+
 // Berichtsname mit Datum – bei Kurznachrichten steckt das Datum schon im Titel
 export function reportLabel(report) {
   const title = reportTitle(report);
