@@ -8,6 +8,7 @@ import { listEditor } from '../core/listEditor.js';
 import { AREAS } from '../config.js';
 
 const STORES = ['reports', 'points', 'photos', 'persons', 'settings'];
+const openSections = new Set(); // während der Sitzung gemerkt
 
 async function exportBackup() {
   const data = { app: 'besprechungsprotokoll', version: 1, exportedAt: Date.now() };
@@ -51,8 +52,11 @@ export async function render() {
     </div>
     <h2>Gründe der Besprechung</h2>
     <div class="card">
-      <p class="meta">Auswahl bei „Neuer Bericht“. Namen direkt im Feld ändern. „Sonstige“ (mit freiem Namen) ist immer verfügbar.</p>
-      <div id="reasonEditor"></div>
+      <details id="reasonDetails">
+        <summary class="settings-summary">Gründe (${reasons.length}) bearbeiten</summary>
+        <p class="meta">Auswahl bei „Neuer Bericht“. Namen direkt im Feld ändern. „Sonstige“ (mit freiem Namen) ist immer verfügbar.</p>
+        <div id="reasonEditor"></div>
+      </details>
     </div>
 
     <h2>Bereiche</h2>
@@ -67,7 +71,9 @@ export async function render() {
 
     <h2>Personen</h2>
     <div class="card">
-      <form id="addPerson" style="display:flex;gap:8px">
+      <details id="personDetails">
+      <summary class="settings-summary">Personen (${persons.length}) bearbeiten</summary>
+      <form id="addPerson" style="display:flex;gap:8px;margin-top:8px">
         <input type="text" id="personName" placeholder="Name hinzufügen">
         <button class="btn" type="submit">＋</button>
       </form>
@@ -75,6 +81,7 @@ export async function render() {
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--blue-100)">
           <span>${esc(p)}</span><button class="btn danger-outline small" data-del="${esc(p)}">Entfernen</button>
         </div>`).join('') : '<p class="empty">Noch keine Personen.</p>'}
+      </details>
     </div>
 
     <h2>Datensicherung</h2>
@@ -90,9 +97,19 @@ export async function render() {
     </div>`;
 
   // Gründe und Bereiche: jede Änderung wird sofort gespeichert
+  // Aufgeklappte Abschnitte bleiben nach dem Neuzeichnen offen
+  app().querySelectorAll('details[id]').forEach((d) => {
+    d.open = openSections.has(d.id);
+    d.addEventListener('toggle', () => (d.open ? openSections.add(d.id) : openSections.delete(d.id)));
+  });
+
+  const reasonSummary = app().querySelector('#reasonDetails summary');
   listEditor(document.getElementById('reasonEditor'), {
     items: reasons,
-    onSave: (list) => model.saveReasons(list),
+    onSave: async (list) => {
+      await model.saveReasons(list);
+      reasonSummary.textContent = `Gründe (${list.length}) bearbeiten`;
+    },
     makeItem: (label) => ({ id: db.uid(), label }),
     noun: 'Grund',
     addPlaceholder: 'Neuen Grund hinzufügen',
