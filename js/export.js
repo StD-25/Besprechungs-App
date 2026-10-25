@@ -12,22 +12,22 @@ async function thumbsFor(pointId) {
   );
 }
 
+// Status mit Fälligkeit bzw. Erledigt-Datum und der Bemerkung zur Erledigung
 const statusText = (p) => {
   if (!p.isTodo) return '–';
-  const due = p.dueDate ? `\nbis ${formatDue(p.dueDate)}` : '';
-  if (p.done) return p.doneAt ? `erledigt am\n${formatDate(p.doneAt)}` : 'erledigt';
-  return `offen${due}`;
+  if (p.done) {
+    const done = p.doneAt ? `erledigt am\n${formatDate(p.doneAt)}` : 'erledigt';
+    return p.doneNote ? `${done}\n\nBemerkung:\n${p.doneNote}` : done;
+  }
+  return `offen${p.dueDate ? `\nbis ${formatDue(p.dueDate)}` : ''}`;
 };
-
-// Offener Punkt/Beschreibung, bei erledigten Punkten mit der Bemerkung zur Erledigung
-const remarkText = (p) => (p.done && p.doneNote ? `${p.remark || ''}\n\nBemerkung (erledigt): ${p.doneNote}` : p.remark || '');
 
 export async function reportPdf(report) {
   const points = (await model.getPoints(report.id)).sort((a, b) => a.no - b.no);
   const rows = [];
   for (const p of points) {
     rows.push({
-      cells: [String(p.no), formatDateTime(p.createdAt), p.area || '', remarkText(p), p.assignee || '', statusText(p), ''],
+      cells: [String(p.no), formatDateTime(p.createdAt), p.area || '', p.remark || '', p.assignee || '', statusText(p), ''],
       images: await thumbsFor(p.id),
     });
   }
@@ -49,7 +49,7 @@ export async function reportPdf(report) {
       { header: 'Bereich', width: 20 },
       { header: 'Offener Punkt/Beschreibung' },
       { header: 'Zuständig', width: 24 },
-      { header: 'Status', width: 24 },
+      { header: 'Status', width: 30 },
       { header: 'Foto', width: 22 },
     ],
     rows,
@@ -84,7 +84,7 @@ export async function todosPdf(todos, { person, status, search = '' }) {
         formatDateTime(t.createdAt),
         model.reportLabel(t.report),
         t.area || '',
-        remarkText(t),
+        t.remark || '',
         t.assignee || '',
         statusText(t),
         '',
@@ -107,7 +107,7 @@ export async function todosPdf(todos, { person, status, search = '' }) {
       { header: 'Bereich', width: 19 },
       { header: 'Offener Punkt/Beschreibung' },
       { header: 'Zuständig', width: 22 },
-      { header: 'Status', width: 24 },
+      { header: 'Status', width: 30 },
       { header: 'Foto', width: 22 },
     ],
     rows,
