@@ -1,5 +1,6 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, confirmDialog, actionDialog, objectURL } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL } from '../core/ui.js';
+import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { multiPerson } from '../core/personPicker.js';
 import { download, shareFile } from '../core/share.js';
@@ -74,13 +75,12 @@ export async function render({ id }) {
     await model.saveReport(report);
     const pdf = await reportPdf(report);
     const zip = await reportImagesZip(report);
-    const kb = Math.round(pdf.blob.size / 1024);
-    await actionDialog(`${pdf.filename} (${kb} KB) wurde erstellt.`, [
+    await showPdfPreview({ blob: pdf.blob, filename: pdf.filename, actions: [
       { label: '✉ Per E-Mail senden', run: () => shareFile(pdf.blob, pdf.filename, { title: `${pdf.title} ${formatDateTime(report.createdAt)}`, text: `Anbei das Protokoll "${pdf.title}" vom ${formatDateTime(report.createdAt)}.` }) },
       { label: '⤓ PDF speichern', cls: 'secondary', close: false, run: () => download(pdf.blob, pdf.filename) },
       ...(zip ? [{ label: `⤓ Bilder speichern (${zip.count}, ZIP)`, cls: 'secondary', close: false, run: () => download(zip.blob, zip.filename) }] : []),
       { label: 'Schließen', cls: 'danger-outline' },
-    ]);
+    ] });
     location.hash = '#/';
   };
 

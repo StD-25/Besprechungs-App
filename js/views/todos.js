@@ -1,5 +1,6 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, actionDialog, objectURL } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, objectURL } from '../core/ui.js';
+import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
 import { todosPdf } from '../export.js';
@@ -77,11 +78,11 @@ export async function render() {
   document.getElementById('pdf').onclick = async () => {
     const person = filters.person === NONE ? 'Ohne Zuständigkeit' : filters.person;
     const pdf = await todosPdf(list, { person, status: STATUS_LABEL[filters.status] });
-    await actionDialog(`${pdf.filename} (${Math.round(pdf.blob.size / 1024)} KB) wurde erstellt.`, [
+    await showPdfPreview({ blob: pdf.blob, filename: pdf.filename, actions: [
       { label: '✉ Per E-Mail senden', run: () => shareFile(pdf.blob, pdf.filename, { title: pdf.title, text: `Anbei die ${pdf.title}.` }) },
       { label: '⤓ PDF speichern', cls: 'secondary', close: false, run: () => download(pdf.blob, pdf.filename) },
       { label: 'Schließen', cls: 'danger-outline' },
-    ]);
+    ] });
     location.hash = '#/';
   };
 }
