@@ -5,7 +5,7 @@ import { blobToDataURL, dataURLToBlob } from '../core/image.js';
 import { download } from '../core/share.js';
 import { buildFilename } from '../core/filename.js';
 import { listEditor } from '../core/listEditor.js';
-import { AREAS } from '../config.js';
+import { AREAS, APP_VERSION } from '../config.js';
 
 const STORES = ['reports', 'points', 'photos', 'persons', 'settings'];
 const openSections = new Set(); // während der Sitzung gemerkt
@@ -94,6 +94,7 @@ export async function render() {
         </label>
       </div>
       <p class="meta" id="storage"></p>
+      <p class="meta">Version ${APP_VERSION}</p>
     </div>`;
 
   // Gründe und Bereiche: jede Änderung wird sofort gespeichert

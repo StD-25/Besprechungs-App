@@ -1,6 +1,9 @@
 // Anpassbare Konfiguration – für weitere Programme hier Gründe/Bereiche ändern.
 export const APP_NAME = 'Besprechungsprotokoll';
 
+// Bei jeder Änderung zusammen mit CACHE in service-worker.js erhöhen
+export const APP_VERSION = '2026-10-25.1';
+
 export const REASONS = [
   { id: 'safetywalk', label: 'Safety Walk', file: 'SafetyWalk' },
   { id: 'poolmanager', label: 'Poolmanager Besprechung', file: 'PoolmanagerBesprechung' },

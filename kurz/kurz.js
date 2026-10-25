@@ -5,6 +5,7 @@ import { toast, objectURL, releaseObjectURLs } from '../js/core/ui.js';
 import { formatDateTime } from '../js/core/filename.js';
 import { singlePerson } from '../js/core/personPicker.js';
 import { areaPicker } from '../js/core/areaPicker.js';
+import { registerServiceWorker } from '../js/core/swUpdate.js';
 
 const $ = (id) => document.getElementById(id);
 let assignee;
@@ -94,6 +95,4 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) fill
 
 fill();
 navigator.storage?.persist?.();
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('../service-worker.js', { scope: '../' }).catch(console.error);
-}
+registerServiceWorker('../service-worker.js', '../');

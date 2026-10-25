@@ -1,4 +1,5 @@
 import { releaseObjectURLs, toast } from './core/ui.js';
+import { registerServiceWorker } from './core/swUpdate.js';
 import * as home from './views/home.js';
 import * as report from './views/report.js';
 import * as pointForm from './views/pointForm.js';
@@ -49,6 +50,4 @@ route();
 // Daten vor automatischem Löschen durch den Browser schützen
 navigator.storage?.persist?.();
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').catch(console.error);
-}
+registerServiceWorker('service-worker.js', './');
