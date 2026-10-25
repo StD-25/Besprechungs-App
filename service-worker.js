@@ -1,12 +1,12 @@
 // Offline-Cache. Bei Änderungen an der App die Versionsnummer erhöhen.
-const CACHE = 'besprechungsprotokoll-v8';
+const CACHE = 'besprechungsprotokoll-v9';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/kurz-192.png', 'icons/kurz-512.png',
   'kurz/', 'kurz/index.html', 'kurz/kurz.js', 'kurz/manifest.webmanifest',
   'vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js', 'vendor/jszip.min.js', 'vendor/pdf.min.js', 'vendor/pdf.worker.min.js',
   'js/app.js', 'js/config.js', 'js/model.js', 'js/export.js',
-  'js/core/db.js', 'js/core/image.js', 'js/core/filename.js', 'js/core/share.js', 'js/core/pdf.js', 'js/core/ui.js', 'js/core/personPicker.js', 'js/core/areaPicker.js', 'js/core/pdfPreview.js',
+  'js/core/db.js', 'js/core/image.js', 'js/core/filename.js', 'js/core/share.js', 'js/core/pdf.js', 'js/core/ui.js', 'js/core/personPicker.js', 'js/core/areaPicker.js', 'js/core/pdfPreview.js', 'js/core/picker.js',
   'js/views/home.js', 'js/views/report.js', 'js/views/pointForm.js', 'js/views/todos.js',
   'js/views/archive.js', 'js/views/settings.js',
 ];

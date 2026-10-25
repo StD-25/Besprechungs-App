@@ -1,5 +1,6 @@
 // Personenauswahl ohne <datalist> (funktioniert zuverlässig in Chrome auf Android).
 import { esc } from './ui.js';
+import { pickMany } from './picker.js';
 
 const NEW = '__new__';
 
@@ -28,56 +29,32 @@ export function singlePerson(container, { value = '', persons = [], id = 'person
   };
 }
 
-// Mehrfachauswahl über <select multiple>: Auf Android öffnet sich das Auswahlfenster
-// des Systems (scrollbare Liste mit Häkchen), am PC eine Liste mit 5 Zeilen.
+// Mehrfachauswahl: Feld wie ein Auswahlfeld, Antippen öffnet das dunkle Auswahlfenster
 export function multiPerson(container, { value = '', persons = [], disabled = false, onChange } = {}) {
   const split = (text) => String(text || '').split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
-  const selected = new Set(split(value));
+  let selected = split(value);
   let all = uniqueSorted([...persons, ...selected]);
 
-  container.innerHTML = `
-    <select multiple size="5" class="person-select" ${disabled ? 'disabled' : ''}></select>
-    <div class="meta person-selected"></div>
-    ${disabled ? '' : `
-    <div class="add-person">
-      <input type="text" placeholder="Neue Person eintragen">
-      <button type="button" class="btn secondary">Hinzufügen</button>
-    </div>`}`;
-  const select = container.querySelector('select');
-  const info = container.querySelector('.person-selected');
+  container.innerHTML = `<button type="button" class="picker-field" ${disabled ? 'disabled' : ''}></button>`;
+  const field = container.querySelector('.picker-field');
 
   function render() {
-    select.innerHTML = all.length
-      ? all.map((p) => `<option ${selected.has(p) ? 'selected' : ''}>${esc(p)}</option>`).join('')
-      : '<option disabled>Noch keine Personen – unten eintragen</option>';
-    info.textContent = selected.size ? `Ausgewählt: ${[...selected].join(', ')}` : 'Noch niemand ausgewählt';
+    field.innerHTML = selected.length
+      ? `<span>${esc(selected.join(', '))}</span>`
+      : '<span class="placeholder">Teilnehmer auswählen</span>';
   }
   render();
 
-  select.onchange = () => {
-    selected.clear();
-    [...select.selectedOptions].forEach((o) => selected.add(o.value));
+  field.onclick = async () => {
+    const result = await pickMany({ options: all, selected, addLabel: 'Neue Person', addPlaceholder: 'Name der neuen Person' });
+    if (!result) return;
+    selected = result;
+    all = uniqueSorted([...all, ...result]);
     render();
     onChange?.();
   };
 
-  const input = container.querySelector('.add-person input');
-  if (input) {
-    const add = () => {
-      const name = input.value.trim();
-      if (!name) return;
-      selected.add(name);
-      all = uniqueSorted([...all, name]);
-      input.value = '';
-      render();
-      onChange?.();
-    };
-    container.querySelector('.add-person button').onclick = add;
-    input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
-  }
-
   return {
-    // Ein noch nicht per „Hinzufügen“ übernommener Name wird mitgenommen
-    getValue: () => [...selected, input?.value.trim()].filter(Boolean).join(', '),
+    getValue: () => selected.join(', '),
   };
 }
