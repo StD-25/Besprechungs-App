@@ -1,6 +1,6 @@
 import * as model from '../model.js';
 import { app, esc, setHeader, setActiveTab, toast, actionDialog, objectURL } from '../core/ui.js';
-import { formatDateTime } from '../core/filename.js';
+import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
 import { todosPdf } from '../export.js';
 
@@ -27,7 +27,8 @@ export async function render() {
         <label class="check" style="margin:0;align-self:flex-start"><input type="checkbox" data-done="${t.id}" ${t.done ? 'checked' : ''} aria-label="erledigt"></label>
         ${photo ? `<div class="thumbs"><img class="thumb" src="${objectURL(photo.thumb)}" alt=""></div>` : ''}
         <div class="body">
-          <div><span class="badge">${esc(t.area || '–')}</span> <span class="badge ${t.done ? 'done' : 'open'}">${t.done ? 'erledigt' : 'offen'}</span></div>
+          <div>${t.area ? `<span class="badge">${esc(t.area)}</span>` : ''} <span class="badge ${t.done ? 'done' : 'open'}">${t.done ? 'erledigt' : 'offen'}</span>
+            ${t.dueDate ? `<span class="badge ${model.isOverdue(t) ? 'overdue' : ''}">bis ${formatDue(t.dueDate)}</span>` : ''}</div>
           <div class="remark">${esc(t.remark)}</div>
           <div class="meta">${formatDateTime(t.createdAt)} · <a href="#/report/${t.reportId}/point/${t.id}">${esc(model.reportTitle(t.report))} ${formatDateTime(t.report.createdAt)}</a></div>
           <select data-assign="${t.id}" style="margin-top:8px">

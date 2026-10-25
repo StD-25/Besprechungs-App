@@ -26,3 +26,20 @@ export function formatDateTime(ts) {
   const d = new Date(ts);
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+export function formatDate(ts) {
+  const d = new Date(ts);
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+// Fälligkeitsdatum aus <input type="date"> ("JJJJ-MM-TT") → "TT.MM.JJJJ"
+export function formatDue(value) {
+  if (!value) return '';
+  const [y, m, d] = value.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+export const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};

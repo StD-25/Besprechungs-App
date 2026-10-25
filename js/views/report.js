@@ -1,6 +1,6 @@
 import * as model from '../model.js';
 import { app, esc, setHeader, setActiveTab, toast, confirmDialog, actionDialog, objectURL } from '../core/ui.js';
-import { formatDateTime } from '../core/filename.js';
+import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
 import { reportPdf, reportImagesZip } from '../export.js';
 
@@ -10,10 +10,11 @@ async function pointCard(p) {
     <div class="card clickable point ${p.done ? 'done' : ''}" data-point="${p.id}">
       ${photos.length ? `<div class="thumbs">${photos.slice(0, 2).map((ph) => `<img class="thumb" src="${objectURL(ph.thumb)}" alt="">`).join('')}</div>` : ''}
       <div class="body">
-        <div><span class="badge">#${p.no}</span> <span class="badge">${esc(p.area || '–')}</span>
-          ${p.isTodo ? `<span class="badge ${p.done ? 'done' : 'open'}">${p.done ? 'erledigt' : 'offen'}</span>` : ''}</div>
+        <div><span class="badge">#${p.no}</span> ${p.area ? `<span class="badge">${esc(p.area)}</span>` : ''}
+          ${p.isTodo ? `<span class="badge ${p.done ? 'done' : 'open'}">${p.done ? 'erledigt' : 'offen'}</span>` : ''}
+          ${p.dueDate ? `<span class="badge ${model.isOverdue(p) ? 'overdue' : ''}">bis ${formatDue(p.dueDate)}</span>` : ''}</div>
         <div class="remark">${esc(p.remark || '')}</div>
-        <div class="meta">${formatDateTime(p.createdAt)}${p.assignee ? ` · Zuständig: <b>${esc(p.assignee)}</b>` : ''}${photos.length > 2 ? ` · ${photos.length} Fotos` : ''}</div>
+        <div class="meta">${formatDateTime(p.createdAt)}${p.author ? ` · von ${esc(p.author)}` : ''}${p.assignee ? ` · Zuständig: <b>${esc(p.assignee)}</b>` : ''}${photos.length > 2 ? ` · ${photos.length} Fotos` : ''}</div>
       </div>
     </div>`;
 }
@@ -35,18 +36,18 @@ export async function render({ id }) {
       <label for="participants">Teilnehmer</label>
       <input type="text" id="participants" value="${esc(report.participants)}" placeholder="Namen, durch Komma getrennt" ${archived ? 'disabled' : ''}>
     </div>
-    ${archived ? '' : '<a class="btn block" href="#/report/' + id + '/point/new">＋ Neue Auffälligkeit</a>'}
-    <h2>Auffälligkeiten (${points.length}${openCount ? `, ${openCount} offen` : ''})</h2>
+    ${archived ? '' : '<a class="btn block" href="#/report/' + id + '/point/new">＋ Neuer Punkt</a>'}
+    <h2>Punkte (${points.length}${openCount ? `, ${openCount} offen` : ''})</h2>
     <div id="points">${points.length ? (await Promise.all(points.map(pointCard))).join('') : '<p class="empty">Noch keine Punkte erfasst.</p>'}</div>
     <h2>Bericht</h2>
-    <div class="btn-row">
-      <button class="btn" id="finish">${archived ? 'PDF erstellen' : 'Bericht abschließen / PDF'}</button>
-    </div>
+    <button class="btn block" id="finish">${archived ? 'PDF erstellen' : 'Bericht abschließen / PDF'}</button>
     <div class="btn-row">
       ${archived
         ? '<button class="btn secondary" id="reactivate">Wieder öffnen</button>'
         : '<button class="btn secondary" id="archive">Ins Archiv</button>'}
-      <button class="btn danger" id="delete">Bericht löschen</button>
+    </div>
+    <div class="delete-row">
+      <button class="btn danger-outline small" id="delete">Bericht löschen</button>
     </div>`;
 
   const part = document.getElementById('participants');
@@ -77,7 +78,7 @@ export async function render({ id }) {
   };
 
   document.getElementById('delete').onclick = async () => {
-    if (await confirmDialog(`Bericht "${title}" mit allen Punkten und Fotos endgültig löschen?`, { ok: 'Löschen', danger: true })) {
+    if (await confirmDialog(`Wollen Sie den Bericht wirklich löschen?\n\n„${title}“ (${formatDateTime(report.createdAt)}) wird mit allen Punkten und Fotos endgültig entfernt.`, { ok: 'Löschen', danger: true })) {
       await model.deleteReport(id);
       toast('Bericht gelöscht');
       location.hash = archived ? '#/archive' : '#/';

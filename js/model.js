@@ -1,12 +1,14 @@
-// Fachlogik: Berichte, Punkte (Auffälligkeiten/Aufgaben), Fotos, Personen.
+// Fachlogik: Berichte, Punkte (offene Punkte/Aufgaben), Fotos, Personen, Einstellungen.
 import * as db from './core/db.js';
 import { REASONS, PHOTO_FULL, PHOTO_THUMB } from './config.js';
 import { resizeImage } from './core/image.js';
+import { formatDate, todayISO } from './core/filename.js';
 
 export const reasonOf = (report) => REASONS.find((r) => r.id === report.reason) || REASONS[0];
 
 export function reportTitle(report) {
   const reason = reasonOf(report);
+  if (reason.id === 'kurznachricht') return `Kurznachricht ${formatDate(report.createdAt)}`;
   return reason.id === 'sonstige' ? report.customName || 'Sonstige' : reason.label;
 }
 
@@ -94,6 +96,40 @@ export async function deletePoint(id) {
 export async function getPhotos(pointId) {
   return (await db.getBy('photos', 'pointId', pointId)).sort((a, b) => a.createdAt - b.createdAt);
 }
+
+// Offen und Fälligkeitsdatum überschritten
+export const isOverdue = (p) => !!(p.isTodo && !p.done && p.dueDate && p.dueDate < todayISO());
+
+// ---- Kurznachricht: ein Bericht pro Tag, jede Nachricht eine offene Aufgabe ----
+export async function addQuickMessage({ author, text, assignee, dueDate }) {
+  const today = formatDate(Date.now());
+  let report = (await listReports('open'))
+    .find((r) => r.reason === 'kurznachricht' && formatDate(r.createdAt) === today);
+  if (!report) {
+    report = await createReport({ reason: 'kurznachricht', participants: author });
+  } else if (author && !splitNames(report.participants).includes(author)) {
+    report.participants = [report.participants, author].filter(Boolean).join(', ');
+    await saveReport(report);
+  }
+  if (author) await addPersons([author]);
+  return savePoint({
+    reportId: report.id,
+    area: '',
+    remark: text,
+    assignee,
+    dueDate: dueDate || '',
+    author: author || '',
+    isTodo: true,
+  });
+}
+
+// ---- Einstellungen ----
+export async function getSetting(key, fallback = '') {
+  const row = await db.get('settings', key);
+  return row ? row.value : fallback;
+}
+
+export const setSetting = (key, value) => db.put('settings', { key, value });
 
 // ---- Aufgaben ----
 export async function listTodos() {

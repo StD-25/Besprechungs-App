@@ -8,12 +8,12 @@ export async function render({ id, pid }) {
   if (!report) { location.hash = '#/'; return; }
   const isNew = pid === 'new';
   const point = isNew
-    ? { reportId: id, area: '', remark: '', assignee: '', isTodo: true }
+    ? { reportId: id, area: '', remark: '', assignee: '', dueDate: '', isTodo: true }
     : await model.getPoint(pid);
   if (!point) { location.hash = `#/report/${id}`; return; }
 
   const back = `#/report/${id}`;
-  setHeader(isNew ? 'Neue Auffälligkeit' : `Punkt #${point.no}`, back);
+  setHeader(isNew ? 'Neuer Punkt' : `Punkt #${point.no}`, back);
   setActiveTab('home');
 
   const existingPhotos = isNew ? [] : await model.getPhotos(pid);
@@ -25,7 +25,7 @@ export async function render({ id, pid }) {
     <form id="pointForm">
       <div class="meta">${esc(model.reportTitle(report))} · ${formatDateTime(point.createdAt || Date.now())}</div>
 
-      <label>Bereich</label>
+      <label>Bereich${report.reason === 'kurznachricht' ? ' (optional)' : ''}</label>
       <div id="areaChip" class="selected-area" ${point.area ? '' : 'hidden'}>${esc(point.area)}</div>
       ${AREA_GROUPS.map((g) => `
         <details class="area-group">
@@ -35,12 +35,15 @@ export async function render({ id, pid }) {
           </div>
         </details>`).join('')}
 
-      <label for="remark">Bemerkung</label>
-      <textarea id="remark" placeholder="Was ist aufgefallen?">${esc(point.remark)}</textarea>
+      <label for="remark">Offener Punkt/Beschreibung</label>
+      <textarea id="remark" placeholder="Was ist offen bzw. aufgefallen?">${esc(point.remark)}</textarea>
 
       <label for="assignee">Zuständigkeit</label>
       <input type="text" id="assignee" list="assigneeList" value="${esc(point.assignee)}" placeholder="Person auswählen oder eintragen" autocomplete="off">
       <datalist id="assigneeList">${[...persons].map((p) => `<option value="${esc(p)}">`).join('')}</datalist>
+
+      <label for="dueDate">Erledigen bis <span class="meta">(optional)</span></label>
+      <input type="date" id="dueDate" value="${esc(point.dueDate || '')}">
 
       <label>Fotos</label>
       <div class="btn-row">
@@ -114,14 +117,15 @@ export async function render({ id, pid }) {
     e.preventDefault();
     const area = form.querySelector('input[name="area"]:checked')?.value || '';
     const remark = document.getElementById('remark').value.trim();
-    if (!area) { toast('Bitte einen Bereich auswählen.'); return; }
-    if (!remark && !newFiles.length && !existingPhotos.length) { toast('Bitte eine Bemerkung oder ein Foto erfassen.'); return; }
+    if (!area && report.reason !== 'kurznachricht') { toast('Bitte einen Bereich auswählen.'); return; }
+    if (!remark && !newFiles.length && !existingPhotos.length) { toast('Bitte einen offenen Punkt/eine Beschreibung oder ein Foto erfassen.'); return; }
     const saveBtn = document.getElementById('save');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Speichert …';
     point.area = area;
     point.remark = remark;
     point.assignee = document.getElementById('assignee').value.trim();
+    point.dueDate = document.getElementById('dueDate').value;
     point.isTodo = document.getElementById('isTodo').checked;
     const doneEl = document.getElementById('done');
     if (doneEl && doneEl.checked !== !!point.done) {

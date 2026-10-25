@@ -1,6 +1,6 @@
 // Generischer IndexedDB-Wrapper (wiederverwendbar).
 const DB_NAME = 'besprechungsprotokoll';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise;
 
@@ -10,14 +10,20 @@ function open() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      db.createObjectStore('reports', { keyPath: 'id' });
-      const points = db.createObjectStore('points', { keyPath: 'id' });
-      points.createIndex('reportId', 'reportId');
+      const has = (name) => db.objectStoreNames.contains(name);
+      if (!has('reports')) db.createObjectStore('reports', { keyPath: 'id' });
+      if (!has('points')) {
+        const points = db.createObjectStore('points', { keyPath: 'id' });
+        points.createIndex('reportId', 'reportId');
+      }
       // Fotos getrennt von den Berichtsdaten
-      const photos = db.createObjectStore('photos', { keyPath: 'id' });
-      photos.createIndex('pointId', 'pointId');
-      photos.createIndex('reportId', 'reportId');
-      db.createObjectStore('persons', { keyPath: 'name' });
+      if (!has('photos')) {
+        const photos = db.createObjectStore('photos', { keyPath: 'id' });
+        photos.createIndex('pointId', 'pointId');
+        photos.createIndex('reportId', 'reportId');
+      }
+      if (!has('persons')) db.createObjectStore('persons', { keyPath: 'name' });
+      if (!has('settings')) db.createObjectStore('settings', { keyPath: 'key' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

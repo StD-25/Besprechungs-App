@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Kurznachricht",
+  "short_name": "Kurznachricht",
+  "description": "Offenen Punkt schnell erfassen – wird als Aufgabe ins Besprechungsprotokoll übernommen.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef4fa",
+  "theme_color": "#1f4e79",
+  "icons": [
+    { "src": "../icons/kurz-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "../icons/kurz-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

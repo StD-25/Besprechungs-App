@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e79">
+  <title>Kurznachricht</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="../icons/kurz-192.png">
+  <link rel="apple-touch-icon" href="../icons/kurz-192.png">
+  <link rel="stylesheet" href="../css/app.css">
+  <script type="module" src="kurz.js"></script>
+</head>
+<body class="quick">
+  <main id="app">
+    <div class="quick-window">
+      <div class="quick-head">
+        <img src="../icons/kurz-192.png" alt="">
+        <h1>Kurznachricht</h1>
+      </div>
+      <form class="quick-body" id="quickForm" novalidate>
+        <div class="stamp" id="stamp"></div>
+
+        <label for="author">Name</label>
+        <input type="text" id="author" autocomplete="name" placeholder="Dein Name">
+
+        <label for="text">Offener Punkt/Beschreibung *</label>
+        <input type="text" id="text" required placeholder="Was ist zu erledigen?">
+
+        <label for="assignee">Zuständigkeit</label>
+        <input type="text" id="assignee" list="persons" autocomplete="off" placeholder="Person auswählen oder eintragen">
+        <datalist id="persons"></datalist>
+
+        <label for="dueDate">Erledigen bis <span class="meta">(optional)</span></label>
+        <input type="date" id="dueDate">
+
+        <div class="action-bar">
+          <button type="button" class="btn danger" id="cancel">Abbrechen</button>
+          <button type="submit" class="btn" id="save">Speichern</button>
+        </div>
+      </form>
+    </div>
+    <a class="footer-link" href="../#/todos">Zur Aufgabenliste im Besprechungsprotokoll</a>
+  </main>
+</body>
+</html>

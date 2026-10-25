@@ -1,21 +1,28 @@
 # Besprechungsprotokoll
 
-Web-App (PWA) zum Erfassen von Auffälligkeiten bei Rundgängen und Besprechungen
+Web-App (PWA) zum Erfassen offener Punkte bei Rundgängen und Besprechungen
 (Safety Walk, Poolmanager Besprechung, Reko Produktion, Sonstige) – mit Fotos,
 Zuständigkeiten, Aufgabenliste, PDF-Bericht und Versand per E-Mail.
 Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 
 ## Funktionen
 - Neuer Bericht: Grund auswählen (bei „Sonstige“ eigener Name), Teilnehmer eintragen
-- Auffälligkeit: Datum/Uhrzeit automatisch, Bereich (Halle 1–8, VB 1–17, Station 1–4,
-  Außenbereich, Parkplatz), Bemerkung, Zuständigkeit, Fotos (Kamera oder Galerie)
+- Neuer Punkt: Datum/Uhrzeit automatisch, Bereich (Halle 1–8, VB 1–17, Station 1–4,
+  Außenbereich, Parkplatz), Offener Punkt/Beschreibung, Zuständigkeit, Erledigen bis (optional),
+  Fotos (Kamera oder Galerie)
 - Neueste Punkte stehen oben; Berichte bleiben offen, bis sie archiviert werden
 - Bericht abschließen → PDF mit Tabelle und kleinen Vorschaubildern (geringe Dateigröße)
   - Dateiname: `SafetyWalk_JJJJ-MM-TT_HH-MM.pdf`
   - Originalfotos separat: `SafetyWalk_JJJJ-MM-TT_HH-MM_Bilder.zip`
   - „Per E-Mail senden“ öffnet den Android-Teilen-Dialog (Gmail, Outlook …) mit PDF als Anhang
 - Aufgabenliste: Filter nach Person oder alle, offen/erledigt, Zuweisung ändern, abhaken, PDF
-- Archiv, Personenverwaltung, Datensicherung (Backup speichern/laden)
+- Archiv, Personenverwaltung, „Mein Name“, Datensicherung (Backup speichern/laden)
+
+## Kurznachricht (zweites Icon mit „K“)
+Kleines Fenster zum schnellen Erfassen: Datum/Uhrzeit automatisch, Name (aus „Mein Name“),
+Offener Punkt/Beschreibung (Pflicht), Zuständigkeit, Erledigen bis (optional).
+Jede Kurznachricht wird automatisch als offene Aufgabe in den Bericht
+„Kurznachricht TT.MM.JJJJ“ des jeweiligen Tages übernommen.
 
 ## Veröffentlichen über GitHub Pages
 1. Repository: https://github.com/StD-25/Besprechungs-App
@@ -31,6 +38,8 @@ Alle Daten bleiben lokal auf dem Handy (offline nutzbar).
 1. Die Adresse in **Chrome** öffnen.
 2. Menü (⋮) → **„App installieren“** bzw. **„Zum Startbildschirm hinzufügen“**.
 3. Die App startet nun über das Icon „Protokoll“ – auch ohne Internet.
+4. Für die Kurznachricht zusätzlich https://std-25.github.io/Besprechungs-App/kurz/ öffnen
+   und ebenfalls ⋮ → „App installieren“ wählen. Es erscheint ein zweites Icon mit „K“.
 
 ## Hinweise
 - Daten liegen nur im Browser-Speicher dieses Geräts. Nicht die Website-Daten von Chrome

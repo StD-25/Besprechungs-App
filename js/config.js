@@ -6,6 +6,8 @@ export const REASONS = [
   { id: 'poolmanager', label: 'Poolmanager Besprechung', file: 'PoolmanagerBesprechung' },
   { id: 'reko', label: 'Reko Produktion', file: 'RekoProduktion' },
   { id: 'sonstige', label: 'Sonstige', file: null }, // Name wird frei eingetragen
+  // Wird nur über die Kurznachricht-App angelegt, nicht im Formular „Neuer Bericht“
+  { id: 'kurznachricht', label: 'Kurznachricht', file: 'Kurznachricht', hidden: true },
 ];
 
 const range = (prefix, from, to) =>

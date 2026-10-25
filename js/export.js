@@ -2,7 +2,7 @@
 import * as model from './model.js';
 import { tablePdf } from './core/pdf.js';
 import { blobToDataURL } from './core/image.js';
-import { buildFilename, formatDateTime, sanitize, stamp } from './core/filename.js';
+import { buildFilename, formatDateTime, formatDue, sanitize, stamp } from './core/filename.js';
 import { makeZip } from './core/share.js';
 
 async function thumbsFor(pointId) {
@@ -12,7 +12,11 @@ async function thumbsFor(pointId) {
   );
 }
 
-const statusText = (p) => (p.isTodo ? (p.done ? 'erledigt' : 'offen') : '–');
+const statusText = (p) => {
+  if (!p.isTodo) return '–';
+  const due = p.dueDate ? `\nbis ${formatDue(p.dueDate)}` : '';
+  return (p.done ? 'erledigt' : 'offen') + due;
+};
 
 export async function reportPdf(report) {
   const points = (await model.getPoints(report.id)).sort((a, b) => a.no - b.no);
@@ -35,9 +39,9 @@ export async function reportPdf(report) {
       { header: 'Nr.', width: 9 },
       { header: 'Datum / Zeit', width: 20 },
       { header: 'Bereich', width: 20 },
-      { header: 'Bemerkung' },
+      { header: 'Offener Punkt/Beschreibung' },
       { header: 'Zuständig', width: 24 },
-      { header: 'Status', width: 16 },
+      { header: 'Status', width: 24 },
       { header: 'Foto', width: 22 },
     ],
     rows,
@@ -74,7 +78,7 @@ export async function todosPdf(todos, { person, status }) {
         t.area || '',
         t.remark || '',
         t.assignee || '',
-        t.done ? 'erledigt' : 'offen',
+        statusText(t),
         '',
       ],
       images: await thumbsFor(t.id),
@@ -92,9 +96,9 @@ export async function todosPdf(todos, { person, status }) {
       { header: 'Datum / Zeit', width: 20 },
       { header: 'Bericht', width: 26 },
       { header: 'Bereich', width: 19 },
-      { header: 'Aufgabe' },
+      { header: 'Offener Punkt/Beschreibung' },
       { header: 'Zuständig', width: 22 },
-      { header: 'Status', width: 15 },
+      { header: 'Status', width: 24 },
       { header: 'Foto', width: 22 },
     ],
     rows,

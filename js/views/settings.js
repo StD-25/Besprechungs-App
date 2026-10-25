@@ -5,7 +5,7 @@ import { blobToDataURL, dataURLToBlob } from '../core/image.js';
 import { download } from '../core/share.js';
 import { buildFilename } from '../core/filename.js';
 
-const STORES = ['reports', 'points', 'photos', 'persons'];
+const STORES = ['reports', 'points', 'photos', 'persons', 'settings'];
 
 async function exportBackup() {
   const data = { app: 'besprechungsprotokoll', version: 1, exportedAt: Date.now() };
@@ -35,7 +35,16 @@ export async function render() {
   setHeader('Einstellungen');
   setActiveTab('settings');
   const persons = await model.listPersons();
+  const myName = await model.getSetting('myName');
   app().innerHTML = `
+    <h2>Mein Name</h2>
+    <div class="card">
+      <p class="meta">Wird bei Kurznachrichten automatisch eingetragen.</p>
+      <form id="myNameForm" style="display:flex;gap:8px">
+        <input type="text" id="myName" value="${esc(myName)}" placeholder="Vor- und Nachname">
+        <button class="btn" type="submit">Speichern</button>
+      </form>
+    </div>
     <h2>Personen</h2>
     <div class="card">
       <form id="addPerson" style="display:flex;gap:8px">
@@ -60,6 +69,14 @@ export async function render() {
       <p class="meta" id="storage"></p>
     </div>`;
 
+  document.getElementById('myNameForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('myName').value.trim();
+    await model.setSetting('myName', name);
+    if (name) await model.addPersons([name]);
+    toast('Name gespeichert');
+    render();
+  };
   document.getElementById('addPerson').onsubmit = async (e) => {
     e.preventDefault();
     const name = document.getElementById('personName').value.trim();

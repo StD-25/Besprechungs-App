@@ -36,7 +36,7 @@ export async function render() {
       <form id="newReport">
         <label>Grund der Besprechung</label>
         <div class="radio-group">
-          ${REASONS.map((r, i) => `
+          ${REASONS.filter((r) => !r.hidden).map((r, i) => `
             <label class="choice"><input type="radio" name="reason" value="${r.id}" ${i === 0 ? 'checked' : ''}> ${esc(r.label)}</label>`).join('')}
         </div>
         <div id="customWrap" hidden>
@@ -49,6 +49,7 @@ export async function render() {
         <button class="btn block" style="margin-top:16px" type="submit">Bericht starten</button>
       </form>
     </div>
+    <a class="btn secondary block link-btn" href="kurz/">✉ Kurznachricht erfassen</a>
     <h2>Offene Berichte</h2>
     <div id="reports">${await reportCards(reports)}</div>`;
 
