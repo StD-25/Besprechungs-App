@@ -1,5 +1,5 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL, askDoneNote } from '../core/ui.js';
 import { formatDateTime } from '../core/filename.js';
 import { singlePerson } from '../core/personPicker.js';
 import { areaPicker } from '../core/areaPicker.js';
@@ -50,7 +50,11 @@ export async function render({ id, pid }) {
       <div class="photos" id="photos"></div>
 
       <label class="check" style="margin-top:18px"><input type="checkbox" id="isTodo" ${point.isTodo ? 'checked' : ''}> In Aufgabenliste übernehmen</label>
-      ${isNew ? '' : `<label class="check"><input type="checkbox" id="done" ${point.done ? 'checked' : ''}> Erledigt</label>`}
+      ${isNew ? '' : `<label class="check"><input type="checkbox" id="done" ${point.done ? 'checked' : ''}> Erledigt</label>
+      <div id="doneNoteWrap" ${point.done ? '' : 'hidden'}>
+        <label for="doneNote">Bemerkung zur Erledigung <span class="meta">(optional)</span></label>
+        <textarea id="doneNote" placeholder="z.B. was wurde gemacht?" style="min-height:70px">${esc(point.doneNote || '')}</textarea>
+      </div>`}
 
       <div class="action-bar">
         <button type="button" class="btn danger" id="cancel">Abbrechen</button>
@@ -91,6 +95,21 @@ export async function render({ id, pid }) {
     };
   }
 
+  // Beim Abhaken nach einer optionalen Bemerkung fragen
+  const doneBox = document.getElementById('done');
+  if (doneBox) {
+    const wrap = document.getElementById('doneNoteWrap');
+    const noteEl = document.getElementById('doneNote');
+    doneBox.onchange = async () => {
+      if (doneBox.checked) {
+        const note = await askDoneNote(noteEl.value);
+        if (note === null) { doneBox.checked = false; return; }
+        noteEl.value = note;
+      }
+      wrap.hidden = !doneBox.checked;
+    };
+  }
+
   document.getElementById('cancel').onclick = () => { location.hash = back; };
 
   form.onsubmit = async (e) => {
@@ -113,6 +132,7 @@ export async function render({ id, pid }) {
       point.done = doneEl.checked;
       point.doneAt = doneEl.checked ? Date.now() : null;
     }
+    if (doneEl) point.doneNote = point.done ? document.getElementById('doneNote').value.trim() : '';
     try {
       await model.savePoint(point, { newFiles, removedPhotoIds });
       toast('Gespeichert');

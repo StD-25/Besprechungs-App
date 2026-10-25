@@ -114,7 +114,8 @@ export async function savePoint(point, { newFiles = [], removedPhotoIds = [] } =
   return point;
 }
 
-export async function setDone(point, done) {
+export async function setDone(point, done, note = '') {
+  point.doneNote = done ? note : '';
   point.done = done;
   point.doneAt = done ? Date.now() : null;
   return db.put('points', point);
@@ -136,7 +137,7 @@ export async function nextPdfVersion(report, points) {
   const parts = [report.participants || ''];
   for (const p of [...points].sort((a, b) => a.no - b.no)) {
     const photos = await getPhotos(p.id);
-    parts.push([p.no, p.area, p.remark, p.assignee, p.dueDate, p.isTodo, p.done, photos.length].join('|'));
+    parts.push([p.no, p.area, p.remark, p.assignee, p.dueDate, p.isTodo, p.done, p.doneNote || '', photos.length].join('|'));
   }
   const signature = parts.join('\n');
   if (!report.pdfVersion || report.pdfSignature !== signature) {

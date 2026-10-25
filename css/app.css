@@ -492,3 +492,15 @@ main#app.split .home-list {
 
 #fSearch { margin-top: 8px; }
 .settings-summary { font-weight: 600; color: var(--blue-800); cursor: pointer; padding: 4px 0; }
+
+/* Bemerkung zur Erledigung */
+.done-note {
+  margin: 2px 0 4px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--green-600);
+  background: #eef7f1;
+  border-radius: 4px;
+  color: #1f5b3a;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

@@ -1,5 +1,5 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, objectURL } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, objectURL, askDoneNote } from '../core/ui.js';
 import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
@@ -19,6 +19,7 @@ async function todoCard(t, persons) {
         <div>${t.area ? `<span class="badge">${esc(t.area)}</span>` : ''} <span class="badge ${t.done ? 'done' : 'open'}">${t.done ? 'erledigt' : 'offen'}</span>
           ${t.dueDate ? `<span class="badge ${model.isOverdue(t) ? 'overdue' : ''}">bis ${formatDue(t.dueDate)}</span>` : ''}</div>
         <div class="remark">${esc(t.remark)}</div>
+        ${t.done && t.doneNote ? `<div class="done-note">✓ Bemerkung: ${esc(t.doneNote)}</div>` : ''}
         <div class="meta">${formatDateTime(t.createdAt)} · <a href="#/report/${t.reportId}/point/${t.id}">${esc(model.reportLabel(t.report))}</a></div>
         <select data-assign="${t.id}" style="margin-top:8px">
           <option value="">– nicht zugewiesen –</option>
@@ -79,7 +80,12 @@ export async function render() {
     root.querySelectorAll('[data-done]').forEach((cb) => {
       cb.onchange = async () => {
         const p = await model.getPoint(cb.dataset.done);
-        await model.setDone(p, cb.checked);
+        let note = '';
+        if (cb.checked) {
+          note = await askDoneNote();
+          if (note === null) { cb.checked = false; return; } // abgebrochen
+        }
+        await model.setDone(p, cb.checked, note);
         toast(cb.checked ? 'Als erledigt markiert' : 'Wieder offen');
         render();
       };

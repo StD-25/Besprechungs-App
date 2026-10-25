@@ -52,6 +52,43 @@ export function confirmDialog(message, { ok = 'OK', cancel = 'Abbrechen', danger
   });
 }
 
+// Eingabefenster mit mehrzeiligem Textfeld. Löst mit dem Text auf (auch leer)
+// oder mit null bei Abbrechen.
+export function promptDialog(message, { label = '', value = '', placeholder = '', ok = 'OK', cancel = 'Abbrechen' } = {}) {
+  return new Promise((resolve) => {
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `
+      <div class="dialog" role="dialog">
+        <p>${esc(message)}</p>
+        ${label ? `<label for="promptText" style="margin-top:0">${esc(label)}</label>` : ''}
+        <textarea id="promptText" placeholder="${esc(placeholder)}" style="min-height:90px">${esc(value)}</textarea>
+        <div class="action-bar">
+          <button class="btn danger-outline" data-r="0">${esc(cancel)}</button>
+          <button class="btn" data-r="1">${esc(ok)}</button>
+        </div>
+      </div>`;
+    const text = ov.querySelector('textarea');
+    ov.addEventListener('click', (e) => {
+      const r = e.target.dataset?.r;
+      if (r === undefined) return; // Tippen daneben schließt nicht, damit nichts verloren geht
+      ov.remove();
+      resolve(r === '1' ? text.value.trim() : null);
+    });
+    document.body.appendChild(ov);
+    text.focus();
+  });
+}
+
+// Fenster beim Erledigen eines Punkts: optionale Bemerkung
+export const askDoneNote = (value = '') =>
+  promptDialog('Punkt als erledigt markieren', {
+    label: 'Bemerkung (optional)',
+    value,
+    placeholder: 'z.B. was wurde gemacht?',
+    ok: 'Erledigt',
+  });
+
 // Auswahl mehrerer Aktionen (z.B. nach PDF-Erstellung).
 export function actionDialog(message, actions) {
   return new Promise((resolve) => {

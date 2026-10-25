@@ -16,6 +16,7 @@ async function pointCard(p) {
           ${p.isTodo ? `<span class="badge ${p.done ? 'done' : 'open'}">${p.done ? 'erledigt' : 'offen'}</span>` : ''}
           ${p.dueDate ? `<span class="badge ${model.isOverdue(p) ? 'overdue' : ''}">bis ${formatDue(p.dueDate)}</span>` : ''}</div>
         <div class="remark">${esc(p.remark || '')}</div>
+        ${p.done && p.doneNote ? `<div class="done-note">✓ Bemerkung: ${esc(p.doneNote)}</div>` : ''}
         <div class="meta">${formatDateTime(p.createdAt)}${p.author ? ` · von ${esc(p.author)}` : ''}${p.assignee ? ` · Zuständig: <b>${esc(p.assignee)}</b>` : ''}${photos.length > 2 ? ` · ${photos.length} Fotos` : ''}</div>
       </div>
     </div>`;

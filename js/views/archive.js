@@ -22,7 +22,7 @@ export async function render() {
   const haystack = new Map();
   for (const r of reports) {
     const points = await model.getPoints(r.id);
-    haystack.set(r.id, lower([model.reportTitle(r), r.participants, ...points.map((p) => p.remark)].join('\n')));
+    haystack.set(r.id, lower([model.reportTitle(r), r.participants, ...points.flatMap((p) => [p.remark, p.doneNote])].join('\n')));
   }
 
   app().innerHTML = `
