@@ -45,7 +45,10 @@ export async function render() {
     return q ? byFilters.filter((t) => (t.remark || '').toLocaleLowerCase('de').includes(q)) : byFilters;
   };
 
+  // Filter, Suche und PDF-Button bleiben stehen, nur die Liste scrollt
+  app().classList.add('split');
   app().innerHTML = `
+    <div class="split-top">
     <div class="filters">
       <select id="fPerson">
         <option value="">Alle Personen</option>
@@ -58,7 +61,8 @@ export async function render() {
     </div>
     <input type="search" id="fSearch" value="${esc(filters.search)}" placeholder="🔍 Offener Punkt/Beschreibung suchen" autocomplete="off">
     <div class="btn-row"><button class="btn" id="pdf"></button></div>
-    <div id="todoList"></div>`;
+    </div>
+    <div class="split-list" id="todoList"></div>`;
 
   const pdfBtn = document.getElementById('pdf');
 

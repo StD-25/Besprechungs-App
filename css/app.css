@@ -463,7 +463,7 @@ body.quick .footer-link { display: block; text-align: center; margin-top: 14px; 
 }
 .pdf-actions .btn { flex: 1 1 45%; }
 
-/* Startseite: oberer Teil fest, nur die Liste der offenen Berichte scrollt */
+/* Oberer Teil fest, nur die Liste darunter scrollt (Startseite, Aufgaben) */
 main#app.split {
   display: flex;
   flex-direction: column;
@@ -471,11 +471,11 @@ main#app.split {
   padding-bottom: calc(var(--tabbar-h, 64px) + 8px);
   overflow: hidden;
 }
-main#app.split .home-top { flex: none; }
+main#app.split .split-top { flex: none; }
 main#app.split .home-top .card { padding: 12px 14px; margin-bottom: 10px; }
 main#app.split .home-top label { margin: 10px 0 4px; }
 main#app.split .home-top h2 { margin: 12px 0 8px; }
-main#app.split .home-list {
+main#app.split .split-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -487,7 +487,7 @@ main#app.split .home-list {
 /* Sehr kleiner Bildschirm oder Querformat: ganze Seite scrollt wie bisher */
 @media (max-height: 560px) {
   main#app.split { display: block; height: auto; overflow: visible; padding-bottom: 96px; }
-  main#app.split .home-list { overflow: visible; }
+  main#app.split .split-list { overflow: visible; }
 }
 
 #fSearch { margin-top: 8px; }

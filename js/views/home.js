@@ -34,7 +34,7 @@ export async function render() {
   // Oberer Teil bleibt stehen, nur die Liste der offenen Berichte scrollt
   app().classList.add('split');
   app().innerHTML = `
-    <div class="home-top">
+    <div class="split-top home-top">
     <div class="card">
       <h2 style="margin-top:0">Neuer Bericht</h2>
       <form id="newReport">
@@ -54,7 +54,7 @@ export async function render() {
     <a class="btn secondary block link-btn" href="kurz/">✉ Kurznachricht erfassen</a>
     <h2>Offene Berichte (${reports.length})</h2>
     </div>
-    <div class="home-list" id="reports">${await reportCards(reports)}</div>`;
+    <div class="split-list" id="reports">${await reportCards(reports)}</div>`;
 
   const participants = multiPerson(document.getElementById('participants'), { persons: await model.listPersons() });
 
