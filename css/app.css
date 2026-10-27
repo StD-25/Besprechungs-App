@@ -504,3 +504,4 @@ main#app.split .split-list {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+.picker-empty-row span:first-child { color: #c4c7cf; font-style: italic; }

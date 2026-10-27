@@ -30,21 +30,55 @@ function openSheet({ top = '', actions, rows }) {
   return { ov, list: ov.querySelector('.picker-list'), close };
 }
 
+// Zeile „＋ Neue …“ mit Eingabefeld (oben im Fenster)
+const addHtml = (addLabel, addPlaceholder) => `
+  <button type="button" class="picker-add">＋ ${esc(addLabel)}…</button>
+  <div class="picker-add-form" hidden>
+    <input type="text" placeholder="${esc(addPlaceholder)}" autocomplete="off">
+    <button type="button" class="picker-btn">Hinzufügen</button>
+  </div>`;
+
+function bindAdd(ov, onAdd) {
+  const form = ov.querySelector('.picker-add-form');
+  const input = form.querySelector('input');
+  ov.querySelector('.picker-add').onclick = () => {
+    form.hidden = false;
+    input.focus();
+  };
+  const add = () => {
+    const name = input.value.trim();
+    if (!name) return;
+    input.value = '';
+    form.hidden = true;
+    onAdd(name);
+  };
+  form.querySelector('button').onclick = add;
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+}
+
 /**
  * Einfachauswahl: Antippen wählt und schließt sofort.
- * Löst mit dem gewählten Eintrag auf oder mit null (Abbrechen / daneben getippt).
+ * Löst mit dem gewählten Eintrag auf ('' für emptyLabel) oder mit null (Abbrechen / daneben getippt).
+ * emptyLabel: erste Zeile zum Leeren der Auswahl, z.B. „– nicht zugewiesen –“.
+ * allowAdd: Zeile „＋ Neue …“; der eingetragene Name wird sofort gewählt.
  */
-export function pickOne({ options = [], selected = '', rows = 9 } = {}) {
+export function pickOne({ options = [], selected = '', rows = 9, emptyLabel = '', allowAdd = false, addLabel = 'Neue Person', addPlaceholder = 'Name' } = {}) {
   return new Promise((resolve) => {
-    const { ov, list, close } = openSheet({ actions: ['cancel'], rows });
-    list.innerHTML = options.map((o) => rowHtml(o, o === selected)).join('');
+    const { ov, list, close } = openSheet({
+      actions: ['cancel'],
+      rows,
+      top: allowAdd ? addHtml(addLabel, addPlaceholder) : '',
+    });
+    list.innerHTML = (emptyLabel ? rowHtml(emptyLabel, !selected).replace('class="picker-row', 'data-empty="1" class="picker-row picker-empty-row') : '')
+      + options.map((o) => rowHtml(o, o === selected)).join('');
     list.querySelector('.picker-row.on')?.scrollIntoView({ block: 'center' });
 
     const finish = (result) => { close(); resolve(result); };
     list.addEventListener('click', (e) => {
       const row = e.target.closest('.picker-row');
-      if (row) finish(row.dataset.name);
+      if (row) finish(row.dataset.empty ? '' : row.dataset.name);
     });
+    if (allowAdd) bindAdd(ov, (name) => finish(name));
     ov.querySelector('[data-act="cancel"]').onclick = () => finish(null);
     ov.addEventListener('click', (e) => { if (e.target === ov) finish(null); });
   });
@@ -63,12 +97,7 @@ export function pickMany({ options = [], selected = [], allowAdd = true, addLabe
     const { ov, list, close } = openSheet({
       rows,
       actions: ['cancel', 'ok'],
-      top: allowAdd ? `
-        <button type="button" class="picker-add">＋ ${esc(addLabel)}…</button>
-        <div class="picker-add-form" hidden>
-          <input type="text" placeholder="${esc(addPlaceholder)}" autocomplete="off">
-          <button type="button" class="picker-btn">Hinzufügen</button>
-        </div>` : '',
+      top: allowAdd ? addHtml(addLabel, addPlaceholder) : '',
     });
 
     function renderList() {
@@ -88,24 +117,12 @@ export function pickMany({ options = [], selected = [], allowAdd = true, addLabe
     });
 
     if (allowAdd) {
-      const form = ov.querySelector('.picker-add-form');
-      const input = form.querySelector('input');
-      ov.querySelector('.picker-add').onclick = () => {
-        form.hidden = false;
-        input.focus();
-      };
-      const add = () => {
-        const name = input.value.trim();
-        if (!name) return;
+      bindAdd(ov, (name) => {
         chosen.add(name);
         all = sortDe([...all, name]);
-        input.value = '';
-        form.hidden = true;
         renderList();
         list.querySelector(`[data-name="${CSS.escape(name)}"]`)?.scrollIntoView({ block: 'nearest' });
-      };
-      form.querySelector('button').onclick = add;
-      input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+      });
     }
 
     const finish = (result) => { close(); resolve(result); };

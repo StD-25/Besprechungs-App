@@ -1,31 +1,42 @@
 // Personenauswahl ohne <datalist> (funktioniert zuverlässig in Chrome auf Android).
 import { esc } from './ui.js';
-import { pickMany } from './picker.js';
-
-const NEW = '__new__';
+import { pickOne, pickMany } from './picker.js';
 
 const uniqueSorted = (names) =>
   [...new Set(names.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
 
-// Einzelauswahl: Auswahlliste + „Neue Person eintragen…“
+// Einzelauswahl: Feld wie ein Auswahlfeld, Antippen öffnet das dunkle Auswahlfenster
+// (mit „– nicht zugewiesen –“ und „＋ Neue Person…“)
 export function singlePerson(container, { value = '', persons = [], id = 'person' } = {}) {
-  const list = uniqueSorted([...persons, value]);
-  container.innerHTML = `
-    <select id="${id}">
-      <option value="">– bitte wählen –</option>
-      ${list.map((p) => `<option ${p === value ? 'selected' : ''}>${esc(p)}</option>`).join('')}
-      <option value="${NEW}">＋ Neue Person eintragen…</option>
-    </select>
-    <input type="text" id="${id}New" placeholder="Name der neuen Person" hidden style="margin-top:8px">`;
-  const select = container.querySelector('select');
-  const input = container.querySelector('input');
-  select.onchange = () => {
-    input.hidden = select.value !== NEW;
-    if (!input.hidden) input.focus();
+  let current = value;
+  let all = uniqueSorted([...persons, value]);
+
+  container.innerHTML = `<button type="button" class="picker-field" id="${id}"></button>`;
+  const field = container.querySelector('.picker-field');
+
+  function render() {
+    field.innerHTML = current ? `<span>${esc(current)}</span>` : '<span class="placeholder">Person auswählen</span>';
+  }
+  render();
+
+  field.onclick = async () => {
+    const picked = await pickOne({
+      options: all,
+      selected: current,
+      emptyLabel: '– nicht zugewiesen –',
+      allowAdd: true,
+      addLabel: 'Neue Person',
+      addPlaceholder: 'Name der neuen Person',
+    });
+    if (picked === null) return;
+    current = picked;
+    all = uniqueSorted([...all, picked]);
+    render();
   };
+
   return {
-    getValue: () => (select.value === NEW ? input.value.trim() : select.value),
-    reset() { select.value = ''; input.value = ''; input.hidden = true; },
+    getValue: () => current,
+    reset() { current = ''; render(); },
   };
 }
 
