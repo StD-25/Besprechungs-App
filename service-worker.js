@@ -2,7 +2,7 @@
 // (zusammen mit APP_VERSION in js/config.js).
 // Präfix je App: mehrere Apps unter std-25.github.io teilen sich die Cache-Ablage
 const PREFIX = 'besprechungsprotokoll-';
-const CACHE = `${PREFIX}v19`;
+const CACHE = `${PREFIX}v20`;
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/kurz-192.png', 'icons/kurz-512.png',
