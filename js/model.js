@@ -199,19 +199,58 @@ export function splitNames(text) {
   return String(text || '').split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
 }
 
+// Entfernte Personen werden gemerkt, damit sie nicht über alte Berichte wieder in der Liste erscheinen
+const getHiddenPersons = async () => new Set(await getSetting('hiddenPersons', []));
+
 export async function addPersons(names) {
-  for (const name of names) if (name) await db.put('persons', { name });
+  const hidden = await getHiddenPersons();
+  let changed = false;
+  for (const name of names) {
+    if (!name) continue;
+    await db.put('persons', { name });
+    changed = hidden.delete(name) || changed;
+  }
+  if (changed) await setSetting('hiddenPersons', [...hidden]);
 }
 
-// Alle jemals eingetragenen Personen: Personenliste + Teilnehmer + Zuständige
+// Alle jemals eingetragenen Personen: Personenliste + Teilnehmer + Zuständige (ohne entfernte)
 export async function listPersons() {
-  const [persons, reports, points] = await Promise.all([db.getAll('persons'), db.getAll('reports'), db.getAll('points')]);
+  const [persons, reports, points, hidden] = await Promise.all([
+    db.getAll('persons'), db.getAll('reports'), db.getAll('points'), getHiddenPersons(),
+  ]);
   const names = [
     ...persons.map((p) => p.name),
     ...reports.flatMap((r) => splitNames(r.participants)),
     ...points.map((p) => p.assignee),
-  ].filter(Boolean);
+  ].filter((n) => n && !hidden.has(n));
   return [...new Set(names)].sort((a, b) => a.localeCompare(b, 'de'));
 }
 
-export const deletePerson = (name) => db.del('persons', name);
+// Aus der Auswahlliste entfernen; bestehende Berichte und Zuweisungen bleiben unverändert
+export async function deletePerson(name) {
+  await db.del('persons', name);
+  const hidden = await getHiddenPersons();
+  hidden.add(name);
+  await setSetting('hiddenPersons', [...hidden]);
+}
+
+// Namen überall ändern: Personenliste, Teilnehmer, Zuständigkeit, Absender, „Mein Name“
+export async function renamePerson(oldName, newName) {
+  if (!newName || oldName === newName) return;
+  const swap = (n) => (n === oldName ? newName : n);
+  for (const r of await db.getAll('reports')) {
+    const names = splitNames(r.participants);
+    if (!names.includes(oldName)) continue;
+    r.participants = [...new Set(names.map(swap))].join(', ');
+    await db.put('reports', r);
+  }
+  for (const p of await db.getAll('points')) {
+    if (p.assignee !== oldName && p.author !== oldName) continue;
+    p.assignee = swap(p.assignee);
+    p.author = swap(p.author);
+    await db.put('points', p);
+  }
+  if ((await getSetting('myName')) === oldName) await setSetting('myName', newName);
+  await db.del('persons', oldName);
+  await addPersons([newName]);
+}

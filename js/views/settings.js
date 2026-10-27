@@ -80,9 +80,11 @@ export async function render() {
         <input type="text" id="personName" placeholder="Name hinzufügen">
         <button class="btn" type="submit">＋</button>
       </form>
+      <p class="meta">Namen direkt im Feld ändern – die Änderung gilt auch in allen Berichten und Aufgaben.</p>
       ${persons.length ? persons.map((p) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--blue-100)">
-          <span>${esc(p)}</span><button class="btn danger-outline small" data-del="${esc(p)}">Entfernen</button>
+        <div class="reason-row">
+          <input type="text" data-person="${esc(p)}" value="${esc(p)}" aria-label="Name">
+          <button class="btn danger-outline small" data-del="${esc(p)}">Entfernen</button>
         </div>`).join('') : '<p class="empty">Noch keine Personen.</p>'}
       </details>
     </div>
@@ -155,9 +157,31 @@ export async function render() {
     await model.addPersons([name]);
     render();
   };
+  // Namen ändern (auch in allen Berichten und Aufgaben)
+  let renaming = false; // nur eine Rückfrage gleichzeitig
+  app().querySelectorAll('[data-person]').forEach((input) => {
+    input.onchange = async () => {
+      if (renaming) return;
+      const oldName = input.dataset.person;
+      const newName = input.value.trim();
+      if (!newName) { toast('Der Name darf nicht leer sein.'); input.value = oldName; return; }
+      if (newName === oldName) return;
+      const exists = persons.includes(newName);
+      const msg = exists
+        ? `„${oldName}“ mit der vorhandenen Person „${newName}“ zusammenführen?\n\nAlle Berichte und Aufgaben von „${oldName}“ werden „${newName}“ zugeordnet.`
+        : `Name „${oldName}“ in „${newName}“ ändern?\n\nDer Name wird auch in allen Berichten und Aufgaben geändert.`;
+      renaming = true;
+      const ok = await confirmDialog(msg, { ok: exists ? 'Zusammenführen' : 'Ändern' });
+      renaming = false;
+      if (!ok) { input.value = oldName; return; }
+      await model.renamePerson(oldName, newName);
+      toast('Name geändert');
+      render();
+    };
+  });
   app().querySelectorAll('[data-del]').forEach((b) => {
     b.onclick = async () => {
-      if (await confirmDialog(`"${b.dataset.del}" aus der Personenliste entfernen? Bestehende Zuweisungen bleiben erhalten.`, { ok: 'Entfernen', danger: true })) {
+      if (await confirmDialog(`Wollen Sie „${b.dataset.del}“ wirklich aus der Personenliste entfernen?\n\nBestehende Berichte und Zuweisungen bleiben erhalten.`, { ok: 'Entfernen', danger: true })) {
         await model.deletePerson(b.dataset.del);
         render();
       }
