@@ -4,6 +4,7 @@ import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
 import { todosPdf } from '../export.js';
+import { pickOne } from '../core/picker.js';
 
 const NONE = '__none__';
 const STATUS_LABEL = { open: 'Offen', done: 'Erledigt', all: 'Alle' };
@@ -21,10 +22,9 @@ async function todoCard(t, persons) {
         <div class="remark">${esc(t.remark)}</div>
         ${t.done && t.doneNote ? `<div class="done-note">✓ Bemerkung: ${esc(t.doneNote)}</div>` : ''}
         <div class="meta">${formatDateTime(t.createdAt)} · <a href="#/report/${t.reportId}/point/${t.id}">${esc(model.reportLabel(t.report))}</a></div>
-        <select data-assign="${t.id}" style="margin-top:8px">
-          <option value="">– nicht zugewiesen –</option>
-          ${persons.map((p) => `<option ${p === t.assignee ? 'selected' : ''}>${esc(p)}</option>`).join('')}
-        </select>
+        <button type="button" class="picker-field" data-assign="${t.id}" data-value="${esc(t.assignee || '')}" style="margin-top:8px">
+          ${t.assignee ? `<span>${esc(t.assignee)}</span>` : '<span class="placeholder">– nicht zugewiesen –</span>'}
+        </button>
       </div>
     </div>`;
 }
@@ -94,12 +94,22 @@ export async function render() {
         render();
       };
     });
-    root.querySelectorAll('[data-assign]').forEach((sel) => {
-      sel.onchange = async () => {
-        const p = await model.getPoint(sel.dataset.assign);
-        p.assignee = sel.value;
+    // Zuweisung über das dunkle Auswahlfenster
+    root.querySelectorAll('[data-assign]').forEach((btn) => {
+      btn.onclick = async () => {
+        const picked = await pickOne({
+          options: persons,
+          selected: btn.dataset.value,
+          emptyLabel: '– nicht zugewiesen –',
+          allowAdd: true,
+          addLabel: 'Neue Person',
+          addPlaceholder: 'Name der neuen Person',
+        });
+        if (picked === null || picked === btn.dataset.value) return;
+        const p = await model.getPoint(btn.dataset.assign);
+        p.assignee = picked;
         await model.savePoint(p);
-        toast(sel.value ? `Zugewiesen an ${sel.value}` : 'Zuweisung entfernt');
+        toast(picked ? `Zugewiesen an ${picked}` : 'Zuweisung entfernt');
         render();
       };
     });
