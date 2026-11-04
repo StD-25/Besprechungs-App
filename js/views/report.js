@@ -1,5 +1,5 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, confirmDialog, objectURL, withBusy } from '../core/ui.js';
 import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { multiPerson } from '../core/personPicker.js';
@@ -71,8 +71,8 @@ export async function render({ id }) {
     el.onclick = () => { location.hash = `#/report/${id}/point/${el.dataset.point}`; };
   });
 
-  document.getElementById('finish').onclick = async () => {
-    toast('PDF wird erstellt …', 1500);
+  const finishBtn = document.getElementById('finish');
+  finishBtn.onclick = () => withBusy(finishBtn, 'PDF wird erstellt …', async () => {
     report.finishedAt = Date.now();
     await model.saveReport(report);
     const pdf = await reportPdf(report);
@@ -84,7 +84,7 @@ export async function render({ id }) {
       { label: 'Schließen', cls: 'danger-outline' },
     ] });
     location.hash = '#/';
-  };
+  });
 
   document.getElementById('delete').onclick = async () => {
     if (await confirmDialog(`Wollen Sie den Bericht wirklich löschen?\n\n„${title}“ (${formatDateTime(report.createdAt)}) wird mit allen Punkten und Fotos endgültig entfernt.`, { ok: 'Löschen', danger: true })) {

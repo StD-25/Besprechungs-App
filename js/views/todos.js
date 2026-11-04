@@ -1,5 +1,5 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, objectURL, askDoneNote } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, objectURL, askDoneNote, withBusy } from '../core/ui.js';
 import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
@@ -119,7 +119,7 @@ export async function render() {
   document.getElementById('fStatus').onchange = (e) => { filters.status = e.target.value; render(); };
   document.getElementById('fSearch').oninput = (e) => { filters.search = e.target.value; renderList(); };
 
-  pdfBtn.onclick = async () => {
+  pdfBtn.onclick = () => withBusy(pdfBtn, 'PDF wird erstellt …', async () => {
     const person = filters.person === NONE ? 'Ohne Zuständigkeit' : filters.person;
     const pdf = await todosPdf(matches(), { person, status: STATUS_LABEL[filters.status], search: filters.search.trim() });
     await showPdfPreview({ blob: pdf.blob, filename: pdf.filename, actions: [
@@ -128,7 +128,7 @@ export async function render() {
       { label: 'Schließen', cls: 'danger-outline' },
     ] });
     location.hash = '#/';
-  };
+  });
 
   await renderList();
 }

@@ -71,7 +71,11 @@ export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) 
         const h = img.h * scale;
         const x = data.cell.x + 1.5 + (i % 2) * (IMG + 1) + (IMG - w) / 2;
         const yy = data.cell.y + 1.5 + Math.floor(i / 2) * (IMG + 1) + (IMG - h) / 2;
-        doc.addImage(img.dataURL, 'JPEG', x, yy, w, h, undefined, 'FAST');
+        try {
+          doc.addImage(img.dataURL, 'JPEG', x, yy, w, h, undefined, 'FAST');
+        } catch (err) {
+          console.warn('Vorschaubild konnte nicht eingefügt werden', err); // PDF trotzdem erstellen
+        }
       });
     },
   });

@@ -5,11 +5,22 @@ import { blobToDataURL } from './core/image.js';
 import { buildFilename, formatDate, formatDateTime, formatDue, sanitize, stamp } from './core/filename.js';
 import { makeZip } from './core/share.js';
 
+// Vorschaubilder für das PDF; beschädigte oder unvollständige Fotos werden übersprungen,
+// damit ein einzelnes Foto nicht das ganze PDF verhindert.
 async function thumbsFor(pointId) {
   const photos = await model.getPhotos(pointId);
-  return Promise.all(
-    photos.map(async (ph) => ({ dataURL: await blobToDataURL(ph.thumb), w: ph.thumbW, h: ph.thumbH }))
-  );
+  const thumbs = [];
+  for (const ph of photos) {
+    try {
+      if (!(ph.thumb instanceof Blob) || !ph.thumb.size) continue;
+      const dataURL = await blobToDataURL(ph.thumb);
+      if (!dataURL.startsWith('data:image/')) continue;
+      thumbs.push({ dataURL, w: ph.thumbW > 0 ? ph.thumbW : 4, h: ph.thumbH > 0 ? ph.thumbH : 3 });
+    } catch (err) {
+      console.warn('Foto übersprungen', err);
+    }
+  }
+  return thumbs;
 }
 
 // Status mit Fälligkeit bzw. Erledigt-Datum und der Bemerkung zur Erledigung
@@ -64,7 +75,7 @@ export async function reportImagesZip(report) {
   const entries = [];
   for (const p of points) {
     const photos = await model.getPhotos(p.id);
-    photos.forEach((ph, i) => {
+    photos.filter((ph) => ph.full instanceof Blob && ph.full.size).forEach((ph, i) => {
       entries.push({
         name: `Punkt${String(p.no).padStart(2, '0')}_${sanitize(p.area)}_${i + 1}.jpg`,
         blob: ph.full,

@@ -52,6 +52,26 @@ export function confirmDialog(message, { ok = 'OK', cancel = 'Abbrechen', danger
   });
 }
 
+// Button während einer längeren Aktion sperren und Fortschritt anzeigen;
+// Fehler werden als Meldung gezeigt statt still abzubrechen.
+export async function withBusy(button, busyLabel, fn) {
+  if (button.disabled) return;
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = busyLabel;
+  try {
+    await fn();
+  } catch (err) {
+    console.error(err);
+    toast(`PDF konnte nicht erstellt werden: ${err.message || err}`, 6000);
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  }
+}
+
 // Eingabefenster mit mehrzeiligem Textfeld. Löst mit dem Text auf (auch leer)
 // oder mit null bei Abbrechen.
 export function promptDialog(message, { label = '', value = '', placeholder = '', ok = 'OK', cancel = 'Abbrechen' } = {}) {
@@ -114,7 +134,11 @@ export function actionDialog(message, actions) {
   });
 }
 
+// Platzhalter für fehlende oder beschädigte Fotos (statt die ganze Ansicht abstürzen zu lassen)
+const MISSING_PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><rect width="72" height="72" fill="#ddebf7"/><text x="36" y="40" font-size="11" text-anchor="middle" fill="#5a6b7d" font-family="sans-serif">Foto fehlt</text></svg>')}`;
+
 export function objectURL(blob) {
+  if (!(blob instanceof Blob) || !blob.size) return MISSING_PHOTO;
   const url = URL.createObjectURL(blob);
   (window.__urls ||= []).push(url);
   return url;
