@@ -41,11 +41,17 @@ export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) 
   const maxImages = Math.max(0, ...rows.map((r) => (r.images || []).length));
   const imgCols = Math.min(maxImages, 2);
 
+  // Bilder je Tabellenzeile über das Zeilen-Array finden: Bricht eine lange Zeile über das
+  // Seitenende, legt autoTable eine Fortsetzungszeile an, deren Index nicht mehr zu `rows` passt.
+  const body = rows.map((r) => [...r.cells]);
+  const imagesOf = new Map(body.map((cells, i) => [cells, rows[i].images || []]));
+  const drawn = new Set(); // Bilder nur einmal zeichnen, nicht erneut in der Fortsetzung
+
   doc.autoTable({
     startY: y + 2,
     margin: { left: margin, right: margin, bottom: 16 },
     head: [columns.map((c) => c.header)],
-    body: rows.map((r) => r.cells),
+    body,
     theme: 'grid',
     styles: { font: 'helvetica', fontSize: 9, cellPadding: 1.8, valign: 'top', lineColor: [189, 215, 238] },
     headStyles: { fillColor: BLUE, textColor: 255 },
@@ -55,7 +61,7 @@ export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) 
     ),
     didParseCell(data) {
       if (data.section === 'body' && data.column.index === imageColumn) {
-        const imgs = rows[data.row.index].images || [];
+        const imgs = imagesOf.get(data.row.raw) || [];
         if (imgs.length) {
           const lines = Math.ceil(Math.min(imgs.length, 4) / 2);
           data.cell.styles.minCellHeight = lines * (IMG + 1) + 3;
@@ -64,7 +70,9 @@ export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) 
     },
     didDrawCell(data) {
       if (data.section !== 'body' || data.column.index !== imageColumn) return;
-      const imgs = (rows[data.row.index].images || []).slice(0, 4);
+      if (drawn.has(data.row.raw)) return;
+      drawn.add(data.row.raw);
+      const imgs = (imagesOf.get(data.row.raw) || []).slice(0, 4);
       imgs.forEach((img, i) => {
         const scale = IMG / Math.max(img.w, img.h);
         const w = img.w * scale;
