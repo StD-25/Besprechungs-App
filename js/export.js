@@ -4,6 +4,7 @@ import { tablePdf } from './core/pdf.js';
 import { blobToDataURL } from './core/image.js';
 import { buildFilename, formatDate, formatDateTime, formatDue, sanitize, stamp } from './core/filename.js';
 import { makeZip } from './core/share.js';
+import { makeXlsx } from './core/xlsx.js';
 
 // Vorschaubilder für das PDF; beschädigte oder unvollständige Fotos werden übersprungen,
 // damit ein einzelnes Foto nicht das ganze PDF verhindert.
@@ -85,6 +86,39 @@ export async function reportImagesZip(report) {
   if (!entries.length) return null;
   const blob = await makeZip(entries);
   return { blob, filename: buildFilename(model.reportFileBase(report), report.createdAt, 'zip', `_${model.versionLabel(report.pdfVersion || 1)}_Bilder`), count: entries.length };
+}
+
+// Aufgaben als Excel-Tabelle (gleiche Auswahl wie im Aufgaben-PDF, ohne Fotos)
+export async function todosXlsx(todos, { person }) {
+  const who = person || 'Alle';
+  const blob = await makeXlsx({
+    sheetName: 'Aufgaben',
+    columns: [
+      { header: 'Erfasst am', width: 17 },
+      { header: 'Bericht', width: 26 },
+      { header: 'Bereich', width: 14 },
+      { header: 'Offener Punkt/Beschreibung', width: 50 },
+      { header: 'Zuständig', width: 18 },
+      { header: 'Erledigen bis', width: 13 },
+      { header: 'Status', width: 10 },
+      { header: 'Erledigt am', width: 12 },
+      { header: 'Bemerkung (erledigt)', width: 40 },
+      { header: 'Erfasst von', width: 18 },
+    ],
+    rows: todos.map((t) => [
+      formatDateTime(t.createdAt),
+      model.reportLabel(t.report),
+      t.area || '',
+      t.remark || '',
+      t.assignee || '',
+      formatDue(t.dueDate),
+      t.done ? 'erledigt' : 'offen',
+      t.done && t.doneAt ? formatDate(t.doneAt) : '',
+      t.done ? t.doneNote || '' : '',
+      t.author || '',
+    ]),
+  });
+  return { blob, filename: `Aufgaben_${sanitize(who)}_${stamp()}.xlsx`, title: `Aufgabenliste – ${who}` };
 }
 
 export async function todosPdf(todos, { person, status, search = '' }) {

@@ -1,9 +1,9 @@
 import * as model from '../model.js';
-import { app, esc, setHeader, setActiveTab, toast, objectURL, askDoneNote, withBusy } from '../core/ui.js';
+import { app, esc, setHeader, setActiveTab, toast, objectURL, askDoneNote, withBusy, actionDialog } from '../core/ui.js';
 import { showPdfPreview } from '../core/pdfPreview.js';
 import { formatDateTime, formatDue } from '../core/filename.js';
 import { download, shareFile } from '../core/share.js';
-import { todosPdf } from '../export.js';
+import { todosPdf, todosXlsx } from '../export.js';
 import { pickOne } from '../core/picker.js';
 
 const NONE = '__none__';
@@ -60,11 +60,15 @@ export async function render() {
       </select>
     </div>
     <input type="search" id="fSearch" value="${esc(filters.search)}" placeholder="🔍 Offener Punkt/Beschreibung suchen" autocomplete="off">
-    <div class="btn-row"><button class="btn" id="pdf"></button></div>
+    <div class="btn-row export-row">
+      <button class="btn" id="pdf"></button>
+      <button class="btn secondary" id="xlsx">📊 Excel</button>
+    </div>
     </div>
     <div class="split-list" id="todoList"></div>`;
 
   const pdfBtn = document.getElementById('pdf');
+  const xlsxBtn = document.getElementById('xlsx');
 
   // Nur die Liste neu aufbauen, damit das Suchfeld beim Tippen den Fokus behält
   let renderId = 0;
@@ -75,6 +79,7 @@ export async function render() {
     if (id !== renderId) return; // inzwischen weitergetippt
     pdfBtn.textContent = `Aufgaben-PDF erstellen (${list.length})`;
     pdfBtn.disabled = !list.length;
+    xlsxBtn.disabled = !list.length;
     const listEl = document.getElementById('todoList');
     listEl.innerHTML = cards.length ? cards.join('') : '<p class="empty">Keine Aufgaben für diese Auswahl.</p>';
     bindList(listEl);
@@ -118,6 +123,18 @@ export async function render() {
   document.getElementById('fPerson').onchange = (e) => { filters.person = e.target.value; render(); };
   document.getElementById('fStatus').onchange = (e) => { filters.status = e.target.value; render(); };
   document.getElementById('fSearch').oninput = (e) => { filters.search = e.target.value; renderList(); };
+
+  // Excel: dieselben Aufgaben wie in der Liste (Person, Status, Suche)
+  xlsxBtn.onclick = () => withBusy(xlsxBtn, 'Excel …', async () => {
+    const person = filters.person === NONE ? 'Ohne Zuständigkeit' : filters.person;
+    const file = await todosXlsx(matches(), { person });
+    await actionDialog(`${file.filename} (${Math.max(1, Math.round(file.blob.size / 1024))} KB) wurde erstellt.`, [
+      { label: '✉ Per E-Mail senden', run: () => shareFile(file.blob, file.filename, { title: file.title, text: `Anbei die ${file.title} als Excel-Datei.` }) },
+      { label: '⤓ Excel speichern', cls: 'secondary', close: false, run: () => download(file.blob, file.filename) },
+      { label: 'Schließen', cls: 'danger-outline' },
+    ]);
+    location.hash = '#/';
+  });
 
   pdfBtn.onclick = () => withBusy(pdfBtn, 'PDF wird erstellt …', async () => {
     const person = filters.person === NONE ? 'Ohne Zuständigkeit' : filters.person;

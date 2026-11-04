@@ -23,7 +23,9 @@ export function canShareFiles() {
 // Fallback: Datei herunterladen und E-Mail-Programm öffnen.
 export async function shareFile(blob, filename, { title, text } = {}) {
   const file = new File([blob], filename, { type: blob.type || 'application/pdf' });
-  if (canShareFiles()) {
+  let canShare = false;
+  try { canShare = !!navigator.canShare?.({ files: [file] }); } catch { /* nicht unterstützt */ }
+  if (canShare) {
     try {
       await navigator.share({ files: [file], title, text });
       return 'shared';

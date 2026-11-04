@@ -63,7 +63,7 @@ export async function withBusy(button, busyLabel, fn) {
     await fn();
   } catch (err) {
     console.error(err);
-    toast(`PDF konnte nicht erstellt werden: ${err.message || err}`, 6000);
+    toast(`Datei konnte nicht erstellt werden: ${err.message || err}`, 6000);
   } finally {
     if (button.isConnected) {
       button.disabled = false;
