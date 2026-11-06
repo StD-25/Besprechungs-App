@@ -6,6 +6,7 @@ import { formatDateTime } from '../js/core/filename.js';
 import { singlePerson } from '../js/core/personPicker.js';
 import { areaPicker } from '../js/core/areaPicker.js';
 import { registerServiceWorker } from '../js/core/swUpdate.js';
+import { startSync, onState } from '../js/core/sync.js';
 
 const $ = (id) => document.getElementById(id);
 let assignee;
@@ -96,3 +97,17 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) fill
 fill();
 navigator.storage?.persist?.();
 registerServiceWorker('../service-worker.js', '../');
+
+// OneDrive-Abgleich (wenn in der Haupt-App eingerichtet); Status unter dem Fenster
+onState((s) => {
+  const el = $('syncInfo');
+  el.hidden = s.status === 'off';
+  el.textContent = {
+    ok: `☁︎ Mit OneDrive abgeglichen${s.lastSync ? ` ${new Date(s.lastSync).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : ''}`,
+    syncing: '☁︎ Abgleich mit OneDrive …',
+    offline: '☁︎ Kein Internet – wird später abgeglichen',
+    login: '☁︎ Für den Abgleich bitte in der App erneut anmelden',
+    error: '☁︎ Abgleich fehlgeschlagen – wird erneut versucht',
+  }[s.status] || '';
+});
+startSync();

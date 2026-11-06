@@ -3,12 +3,56 @@ import * as db from '../core/db.js';
 import { app, esc, setHeader, setActiveTab, toast, confirmDialog } from '../core/ui.js';
 import { blobToDataURL, dataURLToBlob } from '../core/image.js';
 import { download } from '../core/share.js';
-import { buildFilename } from '../core/filename.js';
+import { buildFilename, formatDateTime } from '../core/filename.js';
 import { listEditor } from '../core/listEditor.js';
+import * as sync from '../core/sync.js';
+import { signIn, signOut } from '../core/auth.js';
 import { AREAS, APP_VERSION } from '../config.js';
 
 const STORES = ['reports', 'points', 'photos', 'persons', 'settings'];
 const openSections = new Set(); // während der Sitzung gemerkt
+let unsubscribeSync = null;
+
+const SYNC_TEXT = {
+  ok: 'Abgeglichen', idle: 'Verbunden', syncing: 'Abgleich läuft …',
+  offline: 'Keine Verbindung – wird später abgeglichen', error: 'Fehler beim Abgleich', login: 'Bitte erneut anmelden',
+};
+
+// Abschnitt „OneDrive-Abgleich“ (aktualisiert sich bei jeder Statusänderung)
+function renderSync(box, s) {
+  const name = s.account?.username || s.account?.name || '';
+  if (s.status === 'off' || (!s.account && s.status !== 'login')) {
+    box.innerHTML = `
+      <p class="meta">Daten zwischen PC und Handy über dein OneDrive abgleichen. Die App nutzt dort nur ihren eigenen Ordner „Apps/Besprechungsprotokoll“.</p>
+      <button class="btn block" id="syncConnect">Mit OneDrive verbinden</button>`;
+    box.querySelector('#syncConnect').onclick = async () => {
+      try { await sync.enable(); await signIn(); } catch (err) { toast('Anmeldung nicht möglich: ' + (err.message || err), 5000); }
+    };
+    return;
+  }
+  box.innerHTML = `
+    ${name ? `<p style="margin:0 0 4px"><b>Verbunden als:</b> ${esc(name)}</p>` : ''}
+    <p class="meta sync-status ${s.status === 'error' || s.status === 'login' ? 'error' : ''}">
+      ${esc(SYNC_TEXT[s.status] || '')}${s.message && s.status === 'error' ? `: ${esc(s.message)}` : ''}
+      ${s.lastSync ? `<br>Letzter Abgleich: ${formatDateTime(s.lastSync)}` : ''}
+    </p>
+    <div class="btn-row">
+      ${s.status === 'login'
+        ? '<button class="btn" id="syncLogin">Erneut anmelden</button>'
+        : `<button class="btn" id="syncNow" ${s.status === 'syncing' ? 'disabled' : ''}>Jetzt abgleichen</button>`}
+    </div>
+    <div class="delete-row" style="margin-top:12px;padding-top:10px">
+      <button class="btn danger-outline small" id="syncDisconnect">Verbindung trennen</button>
+    </div>`;
+  box.querySelector('#syncNow')?.addEventListener('click', () => sync.syncNow());
+  box.querySelector('#syncLogin')?.addEventListener('click', () => signIn());
+  box.querySelector('#syncDisconnect').onclick = async () => {
+    if (!(await confirmDialog('Wollen Sie die Verbindung zu OneDrive wirklich trennen?\n\nDie Daten auf diesem Gerät und in OneDrive bleiben erhalten; es wird nur nicht mehr abgeglichen.', { ok: 'Trennen', danger: true }))) return;
+    await signOut();
+    await sync.disable();
+    toast('Verbindung getrennt');
+  };
+}
 
 async function exportBackup() {
   const data = { app: 'besprechungsprotokoll', version: 1, exportedAt: Date.now() };
@@ -89,11 +133,19 @@ export async function render() {
       </details>
     </div>
 
+    <h2>OneDrive-Abgleich</h2>
+    <div class="card">
+      <details id="syncDetails">
+        <summary class="settings-summary" id="syncSummary">OneDrive-Abgleich</summary>
+        <div id="syncBox"></div>
+      </details>
+    </div>
+
     <h2>Datensicherung</h2>
     <div class="card">
       <details id="backupDetails">
         <summary class="settings-summary">Sicherung speichern / laden</summary>
-        <p class="meta">Alle Daten liegen nur auf diesem Gerät. Regelmäßig sichern, z.B. vor einem Handywechsel.</p>
+        <p class="meta">${sync.isEnabled() ? 'Die Daten werden zusätzlich mit OneDrive abgeglichen. Eine Sicherung ist trotzdem sinnvoll, z.B. vor einem Handywechsel.' : 'Alle Daten liegen nur auf diesem Gerät. Regelmäßig sichern, z.B. vor einem Handywechsel.'}</p>
         <div class="btn-row">
           <button class="btn" id="export">Sicherung speichern</button>
           <label class="btn secondary" style="margin:0">Sicherung laden
@@ -106,6 +158,16 @@ export async function render() {
     <p class="meta" style="text-align:center">Version ${APP_VERSION}</p>`;
 
   // Gründe und Bereiche: jede Änderung wird sofort gespeichert
+  // OneDrive-Abgleich: Abschnitt und Kopfzeile laufend aktualisieren
+  unsubscribeSync?.();
+  const syncBox = document.getElementById('syncBox');
+  const syncSummary = document.getElementById('syncSummary');
+  unsubscribeSync = sync.onState((s) => {
+    if (!syncBox.isConnected) { unsubscribeSync?.(); return; }
+    syncSummary.textContent = s.status === 'off' ? 'OneDrive-Abgleich einrichten' : `OneDrive-Abgleich: ${SYNC_TEXT[s.status] || ''}`;
+    renderSync(syncBox, s);
+  });
+
   // Aufgeklappte Abschnitte bleiben nach dem Neuzeichnen offen
   app().querySelectorAll('details[id]').forEach((d) => {
     d.open = openSections.has(d.id);

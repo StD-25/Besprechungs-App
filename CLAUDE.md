@@ -4,6 +4,7 @@ Web-App (PWA) zum Erfassen offener Punkte bei Rundgängen und Besprechungen (Saf
 
 - Repository: `StD-25/Besprechungs-App` · Online: https://std-25.github.io/Besprechungs-App/ (Kurznachricht: `/kurz/`)
 - Datenbank `besprechungsprotokoll`, Cache-Präfix `besprechungsprotokoll-`
+- **OneDrive-Abgleich** (`js/core/auth.js`, `js/core/sync.js`, MSAL in `vendor/msal-browser.min.js`): Anmeldung mit Microsoft-Konto (App-Registrierung „Besprechungsprotokoll“, Client-ID in `auth.js`, Recht `Files.ReadWrite.AppFolder`, Umleitungs-URIs `…/Besprechungs-App/` und `…/kurz/`). Daten in OneDrive `Apps/Besprechungsprotokoll/data.json`, Fotos unter `fotos/<id>.jpg` und `fotos/<id>_t.jpg`. Jede lokale Änderung über `db.put/del` bekommt `_mod`, Löschungen landen im Store `tombstones`; Daten aus dem Abgleich mit `{ sync: true }` schreiben. Neue Stores müssen in `KEY_OF` (`db.js`) und `STORES` (`sync.js`) aufgenommen werden.
 - Schwester-App **OPL-Maschine** (`StD-25/OPL-Anlagen`) ist eine Kopie dieser App mit eigener Datenhaltung. Änderungen hier gelten **nicht** automatisch dort.
 ## Technik
 - Reines HTML/CSS/JavaScript (ES-Module), **kein Build-Schritt**. Läuft direkt über GitHub Pages (Branch `main`, Ordner `/`).

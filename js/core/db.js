@@ -1,6 +1,6 @@
 // Generischer IndexedDB-Wrapper (wiederverwendbar).
 const DB_NAME = 'besprechungsprotokoll';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise;
 
@@ -24,6 +24,8 @@ function open() {
       }
       if (!has('persons')) db.createObjectStore('persons', { keyPath: 'name' });
       if (!has('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+      // Gelöschte Einträge (für den OneDrive-Abgleich): k = "store|schlüssel"
+      if (!has('tombstones')) db.createObjectStore('tombstones', { keyPath: 'k' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -55,12 +57,30 @@ export async function getAll(name) {
 export async function getBy(name, index, value) {
   return wrap((await store(name)).index(index).getAll(value));
 }
-export async function put(name, value) {
+// Schlüsselfeld je Store (für Löschvermerke)
+export const KEY_OF = { reports: 'id', points: 'id', photos: 'id', persons: 'name', settings: 'key' };
+const tombKey = (name, key) => `${name}|${key}`;
+
+// Lokale Änderung melden (der OneDrive-Abgleich hört darauf)
+const changed = () => { try { window.dispatchEvent(new CustomEvent('db-change')); } catch { /* kein Fenster */ } };
+
+// Jede lokale Änderung bekommt einen Zeitstempel _mod, damit der Abgleich den neueren
+// Stand erkennt. { sync: true } schreibt Daten aus dem Abgleich unverändert.
+export async function put(name, value, { sync = false } = {}) {
+  if (!sync && name in KEY_OF) value._mod = Date.now();
   await wrap((await store(name, 'readwrite')).put(value));
+  if (!sync && name in KEY_OF) {
+    await wrap((await store('tombstones', 'readwrite')).delete(tombKey(name, value[KEY_OF[name]])));
+    changed();
+  }
   return value;
 }
-export async function del(name, key) {
-  return wrap((await store(name, 'readwrite')).delete(key));
+export async function del(name, key, { sync = false } = {}) {
+  await wrap((await store(name, 'readwrite')).delete(key));
+  if (!sync && name in KEY_OF) {
+    await wrap((await store('tombstones', 'readwrite')).put({ k: tombKey(name, key), store: name, key, _mod: Date.now() }));
+    changed();
+  }
 }
 export async function clear(name) {
   return wrap((await store(name, 'readwrite')).clear());
