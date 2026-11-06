@@ -4,7 +4,11 @@ import { formatDateTime } from './filename.js';
 const BLUE = [31, 78, 121];
 const LIGHT = [238, 244, 250];
 
+const MARGIN = 12;
+const IMG = 17; // Kantenlänge eines Vorschaubilds in mm
+
 /**
+ * Ein PDF aus einem Abschnitt (Kopf + Tabelle).
  * @param {object} o
  * @param {string} o.title
  * @param {Array<[string,string]>} o.info       Kopfzeilen [Bezeichnung, Wert]
@@ -13,12 +17,30 @@ const LIGHT = [238, 244, 250];
  * @param {number} [o.imageColumn]             Spaltenindex für Bilder
  * @returns {Blob}
  */
-export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) {
+export const tablePdf = (section) => sectionsPdf([section]);
+
+// Ein PDF aus mehreren Abschnitten; jeder Abschnitt beginnt auf einer neuen Seite
+export function sectionsPdf(sections) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-  const margin = 12;
-  const IMG = 17; // Kantenlänge eines Vorschaubilds in mm
+  sections.forEach((section, i) => {
+    if (i > 0) doc.addPage();
+    drawSection(doc, section);
+  });
 
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(90, 107, 125);
+    doc.text(`Erstellt: ${formatDateTime(Date.now())}`, MARGIN, 290);
+    doc.text(`Seite ${i} / ${pages}`, 210 - MARGIN, 290, { align: 'right' });
+  }
+  return doc.output('blob');
+}
+
+function drawSection(doc, { title, info = [], columns, rows, imageColumn = -1 }) {
+  const margin = MARGIN;
   doc.setFillColor(...BLUE);
   doc.rect(0, 0, 210, 22, 'F');
   doc.setTextColor(255, 255, 255);
@@ -88,13 +110,4 @@ export function tablePdf({ title, info = [], columns, rows, imageColumn = -1 }) 
     },
   });
 
-  const pages = doc.getNumberOfPages();
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(90, 107, 125);
-    doc.text(`Erstellt: ${formatDateTime(Date.now())}`, margin, 290);
-    doc.text(`Seite ${i} / ${pages}`, 210 - margin, 290, { align: 'right' });
-  }
-  return doc.output('blob');
 }

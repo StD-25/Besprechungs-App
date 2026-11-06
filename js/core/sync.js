@@ -275,3 +275,8 @@ export async function startSync() {
   });
   syncNow();
 }
+
+// Direkter Dateizugriff im OneDrive-App-Ordner (z.B. für die Archiv-Ablage)
+export const cloudReady = () => isEnabled() && !!state.account && navigator.onLine;
+export const cloudRead = readFile;
+export const cloudWrite = writeFile;
