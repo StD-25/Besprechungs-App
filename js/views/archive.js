@@ -97,16 +97,34 @@ async function countFor(reports) {
 }
 
 // Gesamt-Daten in OneDrive ergänzen (bei gleichzeitiger Änderung neu lesen und erneut anhängen)
-async function appendArchiveData(entries) {
+// Jeder Punkt eines Berichts nur einmal (bei Wiederholung zählt der neueste Eintrag)
+function uniqueEntries(list) {
+  const map = new Map();
+  for (const e of list) {
+    const key = `${e.reportId}|${e.no}`;
+    const prev = map.get(key);
+    if (!prev || e.archivedAt >= prev.archivedAt) map.set(key, e);
+  }
+  return [...map.values()];
+}
+
+// Gesamt-Tabelle und Archiv-Daten in OneDrive ergänzen.
+// Erst die Excel-Tabelle schreiben (kann scheitern, z.B. wenn sie geöffnet ist), danach die Daten –
+// so bleibt bei einem Fehler alles unverändert und es entstehen keine doppelten Zeilen.
+async function appendArchive(entries) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const file = await cloudRead(ARCHIVE_DATA);
     const data = file ? JSON.parse(await file.blob.text()) : { app: 'besprechungsprotokoll-archiv', format: 1, entries: [] };
-    data.entries = [...(data.entries || []), ...entries];
+    data.entries = uniqueEntries([...(data.entries || []), ...entries]);
+    await cloudWrite(ARCHIVE_XLSX, await archiveXlsx(data.entries), {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     try {
       await cloudWrite(ARCHIVE_DATA, new Blob([JSON.stringify(data)], { type: 'application/json' }), { eTag: file ? file.eTag : '*' });
-      return data.entries;
+      return;
     } catch (err) {
       if (err.status !== 412 && err.status !== 409) throw err;
+      // Inzwischen von einem anderen Gerät geändert: neu lesen und Tabelle erneut schreiben
     }
   }
   throw new Error('Die Archiv-Daten in OneDrive wurden gleichzeitig geändert – bitte erneut versuchen.');
@@ -206,10 +224,7 @@ function cleanupDialog() {
       ov.querySelector('.dialog').innerHTML = '<p class="meta" id="cuStatus"></p>';
 
       status('Gesamt-Tabelle wird ergänzt …');
-      const all = await appendArchiveData(entries);
-      await cloudWrite(ARCHIVE_XLSX, await archiveXlsx(all), {
-        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
+      await appendArchive(entries);
 
       status('Berichte werden gelöscht …');
       for (const r of selected) await model.deleteReport(r.id);

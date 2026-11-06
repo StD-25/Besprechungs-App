@@ -15,8 +15,10 @@ function colName(i) {
   return s;
 }
 
-const cell = (ref, value, style) =>
-  `<c r="${ref}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+// Zahlen als echte Zahlen (sonst zeigt Excel „Zahl als Text gespeichert“), alles andere als Text
+const cell = (ref, value, style) => (typeof value === 'number' && Number.isFinite(value)
+  ? `<c r="${ref}" s="${style}"><v>${value}</v></c>`
+  : `<c r="${ref}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${xml(value)}</t></is></c>`);
 
 /**
  * Einzelnes Blatt: makeXlsx({ sheetName, columns, rows }); mehrere: makeXlsx({ sheets: [{ name, columns, rows }] }).

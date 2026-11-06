@@ -266,7 +266,7 @@ export async function archiveXlsx(entries) {
   const rows = [...entries]
     .sort((a, b) => a.archivedAt - b.archivedAt || a.reportDate - b.reportDate || a.no - b.no)
     .map((e) => [
-      formatDateTime(e.archivedAt), e.report, formatDateTime(e.reportDate), e.participants, String(e.no),
+      formatDateTime(e.archivedAt), e.report, formatDateTime(e.reportDate), e.participants, Number(e.no) || '',
       formatDateTime(e.createdAt), e.area, e.remark, e.assignee, formatDue(e.dueDate), e.status,
       e.doneAt ? formatDate(e.doneAt) : '', e.doneNote, e.author,
     ]);
