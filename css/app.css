@@ -529,3 +529,6 @@ main#app.split .split-list {
 @keyframes sync-pulse { 50% { opacity: 0.5; } }
 .sync-status { margin: 6px 0; }
 .sync-status.error { color: var(--red-700); }
+
+/* Archiv aufräumen */
+.cleanup-dialog input[type="date"] { margin-top: 4px; }
