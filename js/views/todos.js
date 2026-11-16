@@ -39,10 +39,11 @@ export async function render() {
   const byFilters = all.filter((t) =>
     (filters.status === 'all' || (filters.status === 'done') === !!t.done) &&
     (!filters.person || (filters.person === NONE ? !t.assignee : t.assignee === filters.person)));
-  // Suche im Text „Offener Punkt/Beschreibung“, Groß-/Kleinschreibung egal
+  // Suche in „Offener Punkt/Beschreibung“ und im Berichtsnamen (mit Datum), Groß-/Kleinschreibung egal
   const matches = () => {
     const q = filters.search.trim().toLocaleLowerCase('de');
-    return q ? byFilters.filter((t) => (t.remark || '').toLocaleLowerCase('de').includes(q)) : byFilters;
+    if (!q) return byFilters;
+    return byFilters.filter((t) => `${t.remark || ''}\n${model.reportLabel(t.report)}`.toLocaleLowerCase('de').includes(q));
   };
 
   // Filter, Suche und PDF-Button bleiben stehen, nur die Liste scrollt
@@ -59,7 +60,7 @@ export async function render() {
         ${Object.entries(STATUS_LABEL).map(([k, v]) => `<option value="${k}" ${k === filters.status ? 'selected' : ''}>${v}</option>`).join('')}
       </select>
     </div>
-    <input type="search" id="fSearch" value="${esc(filters.search)}" placeholder="🔍 Offener Punkt/Beschreibung suchen" autocomplete="off">
+    <input type="search" id="fSearch" value="${esc(filters.search)}" placeholder="🔍 Punkt oder Bericht suchen" autocomplete="off">
     <div class="btn-row export-row">
       <button class="btn" id="pdf"></button>
       <button class="btn secondary" id="xlsx">📊 Excel</button>
