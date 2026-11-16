@@ -108,6 +108,7 @@ export async function todosXlsx(todos, { person }) {
     columns: [
       { header: 'Erfasst am', width: 17 },
       { header: 'Bericht', width: 26 },
+      { header: 'Nr.', width: 6 }, // Nummer des Punkts im Berichts-PDF
       { header: 'Bereich', width: 14 },
       { header: 'Offener Punkt/Beschreibung', width: 50 },
       { header: 'Zuständig', width: 18 },
@@ -120,6 +121,7 @@ export async function todosXlsx(todos, { person }) {
     rows: todos.map((t) => [
       formatDateTime(t.createdAt),
       model.reportLabel(t.report),
+      Number(t.no) || '',
       t.area || '',
       t.remark || '',
       t.assignee || '',
