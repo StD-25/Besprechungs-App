@@ -108,6 +108,7 @@ export async function todosXlsx(todos, { person }) {
     columns: [
       { header: 'Erfasst am', width: 17 },
       { header: 'Bericht', width: 26 },
+      { header: 'PDF-Version', width: 11 }, // zuletzt erstelltes Berichts-PDF (_V01, _V02 …)
       { header: 'Nr.', width: 6 }, // Nummer des Punkts im Berichts-PDF
       { header: 'Bereich', width: 14 },
       { header: 'Offener Punkt/Beschreibung', width: 50 },
@@ -121,6 +122,7 @@ export async function todosXlsx(todos, { person }) {
     rows: todos.map((t) => [
       formatDateTime(t.createdAt),
       model.reportLabel(t.report),
+      t.report.pdfVersion ? model.versionLabel(t.report.pdfVersion) : '',
       Number(t.no) || '',
       t.area || '',
       t.remark || '',
@@ -247,6 +249,7 @@ export async function archiveEntries(reports, at) {
         report: model.reportTitle(r),
         reportDate: r.createdAt,
         participants: r.participants || '',
+        pdfVersion: r.pdfVersion || 0,
         no: p.no,
         createdAt: p.createdAt,
         area: p.area || '',
@@ -268,7 +271,8 @@ export async function archiveXlsx(entries) {
   const rows = [...entries]
     .sort((a, b) => a.archivedAt - b.archivedAt || a.reportDate - b.reportDate || a.no - b.no)
     .map((e) => [
-      formatDateTime(e.archivedAt), e.report, formatDateTime(e.reportDate), e.participants, Number(e.no) || '',
+      formatDateTime(e.archivedAt), e.report, formatDateTime(e.reportDate), e.participants,
+      e.pdfVersion ? model.versionLabel(e.pdfVersion) : '', Number(e.no) || '',
       formatDateTime(e.createdAt), e.area, e.remark, e.assignee, formatDue(e.dueDate), e.status,
       e.doneAt ? formatDate(e.doneAt) : '', e.doneNote, e.author,
     ]);
@@ -279,6 +283,7 @@ export async function archiveXlsx(entries) {
       { header: 'Bericht', width: 24 },
       { header: 'Berichtsdatum', width: 17 },
       { header: 'Teilnehmer', width: 24 },
+      { header: 'PDF-Version', width: 11 },
       { header: 'Nr.', width: 6 },
       { header: 'Erfasst am', width: 17 },
       { header: 'Bereich', width: 14 },
